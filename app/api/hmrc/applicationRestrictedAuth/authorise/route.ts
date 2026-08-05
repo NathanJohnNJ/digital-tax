@@ -4,7 +4,11 @@ import { cookies } from 'next/headers';
 
 export async function GET(req: NextRequest) {
   const fullUrl = req.nextUrl;
-  const baseUrl = fullUrl.toString().slice(0, 22);
+  let baseUrl = fullUrl.toString().slice(0, 22);
+  
+  if (baseUrl !== 'http://localhost:3000/'){
+    baseUrl = "https://dt.njtd.xyz/"
+  }
   const cookieStore = await cookies();
   
   const tokenResponse = await fetch(`${HMRC_CONFIG.testApiUrl}/oauth/token`, {
