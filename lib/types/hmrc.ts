@@ -1,0 +1,3 @@
+type HMRCProps = {
+  accessToken?: string
+}

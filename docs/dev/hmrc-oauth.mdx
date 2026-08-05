@@ -1,0 +1,21 @@
+# HMRC OAuth Flow
+
+The app uses HMRC’s OAuth 2.0 flow to authenticate users.
+
+---
+
+## Steps
+
+1. Redirect user to HMRC login  
+2. User signs in with Government Gateway  
+3. HMRC returns an authorization code  
+4. App exchanges the code for an access token  
+5. Token is stored securely  
+6. Token is refreshed automatically when needed
+
+---
+
+## Sandbox vs Production
+
+HMRC provides a sandbox environment for testing.  
+More details will be added once full submission features are implemented.

@@ -1,18 +1,50 @@
 {
-  "name": "njtd-mtd",
+  "name": "digital-tax",
   "version": "0.1.0",
-  "private": true,
+  "author": "Nathan John <nj@njtd.xyz> (https://www.njtd.xyz/)",
+  "description": "A Next.js web app built for the Making Tax Digital switchover for self-employed people to be able to link their HMRC account, submit quarterly updates and end of year tax returns.",
+  "keywords": [
+    "mtd",
+    "making",
+    "tax",
+    "digital",
+    "HMRC",
+    "njtd"
+  ],
+  "homepage": "https://dt.njtd.xyz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NathanJohnNJ/digital-tax.git"
+  },
+  "type": "module",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
-    "next": "16.2.11"
+    "@auth0/nextjs-auth0": "^4.25.0",
+    "@heroicons/react": "^2.2.0",
+    "@mdx-js/loader": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
+    "@next/mdx": "^16.3.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/typography": "^0.5.20",
+    "@types/mdx": "^2.0.14",
+    "clsx": "^2.1.1",
+    "next": "^16.2.11",
+    "postcss": "^8.5.22",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^26.1.1",
     "@types/react": "^19",
-    "typescript": "^5"
+    "dotenv": "^17.4.2",
+    "typescript": "7.0.2"
+  },
+  "bugs": {
+    "url": "https://github.com/NathanJohnNJ/digital-tax/issues",
+    "email": "dt@njtd.xyz"
   }
 }
