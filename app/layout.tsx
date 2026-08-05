@@ -27,8 +27,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Auth0 Next.js App",
-  description: "Next.js app with Auth0 authentication",
+  title: "Digital Tax by NJTD",
+  description: "Digital Tax app brought to you by NJTD to ease the transition of Making Tax Digital with HMRC.",
 };
 
 export default async function RootLayout({
@@ -44,7 +44,7 @@ export default async function RootLayout({
           <Auth0Provider>
             <div className="flex h-screen w-screen">
               <SideNav />
-              <div className="flex items-start justify-center w-full h-full">
+              <div className="flex flex-col items-start justify-center w-full h-full">
                 {children}
               </div>
             </div>

@@ -9,8 +9,6 @@ import Link from 'next/link';
 import clsx from 'clsx';
 import { usePathname } from 'next/navigation';
 
-// Map of links to display in the side navigation.
-// Depending on the size of the application, this would be stored in a database.
 const links = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Account', href: '/account', icon: UserIcon },
@@ -27,9 +25,9 @@ export default function NavLinks() {
           return (
             <Link key={link.name} href={link.href}
             className={clsx(
-              'flex h-12 grow items-center justify-center gap-2 rounded-l-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start z-50',
+              'flex h-12 grow items-center justify-center gap-2 rounded-l-md bg-gray-50 p-3 text-sm font-medium hover:bg-green-50 hover:text-green-700 md:flex-none md:justify-start z-50',
               {
-                'bg-sky-100 text-blue-600 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === link.href
+                'bg-sky-100 text-green-700 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === link.href
               },
             )}>
               <LinkIcon className="w-6" />
