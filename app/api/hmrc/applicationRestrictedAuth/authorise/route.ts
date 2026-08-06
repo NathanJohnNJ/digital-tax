@@ -35,7 +35,6 @@ let tokens;
       secure: true, 
       maxAge: tokens.expires_in
     }
-    console.log(tokens);
     cookieStore.set('application_access_token', tokens.access_token, options);
   } catch (err) {
     console.error("Failed to parse token response:", err);

@@ -1,7 +1,5 @@
 'use client';
 
-import { NextRequest } from 'next/server';
-
 const getScreenDetails = async () => {
   const width = window.screen.width;
   const height = window.screen.height;
@@ -53,7 +51,7 @@ const getDeviceID = async () => {
   return existing;
 }
 
-const getClientPublicPort = async (req: NextRequest) => {
+const getClientPublicPort = async (req: Request) => {
   try {
     const forwardedPort = req.headers.get("x-forwarded-port");
     if (forwardedPort) {
@@ -78,7 +76,7 @@ const getClientPublicPort = async (req: NextRequest) => {
 };
 
 export async function buildClientPayload(){
-  const publicPort = await getClientPublicPort(new NextRequest(window.location.href));
+  const publicPort = await getClientPublicPort(new Request(window.location.href));
   const deviceID = await getDeviceID();
   const publicIPDetails = await getPublicIPDetails();
   const screenDetails = await getScreenDetails();
