@@ -6,7 +6,7 @@ export async function GET() {
 
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", HMRC_CONFIG.clientId);
-  url.searchParams.set("scope", percentEncode("read:self-assessment write:self-assessment"));
+  url.searchParams.set("scope", percentEncode("read:self-assessment write:self-assessment read:vat read:business-details"));
   url.searchParams.set("redirect_uri", HMRC_CONFIG.redirectUri);
 
   return Response.redirect(url.toString());

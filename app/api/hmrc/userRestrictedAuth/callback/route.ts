@@ -3,19 +3,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
 
 export async function GET(req: NextRequest) {
+  const cookieStore = await cookies();
   const code = req.nextUrl.searchParams.get('code');
+
+  if (!code) {
+    return Response.json({ error: "Missing authorization code" }, { status: 400 });
+  }
+
+  cookieStore.set('code', code, {
+    httpOnly: true,
+    secure: true
+  });
+
   const fullUrl = req.nextUrl;
   let baseUrl = fullUrl.toString().slice(0, 22);
   console.log(baseUrl);
   if (baseUrl !== 'http://localhost:3000/'){
     baseUrl = "https://dt.njtd.xyz/"
   }
-  const cookieStore = await cookies();
   
-  if (!code) {
-    return Response.json({ error: "Missing authorization code" }, { status: 400 });
-  }
-
   const tokenResponse = await fetch(`${HMRC_CONFIG.testTokenUrl}`, {
     method: "POST",
     headers: {
