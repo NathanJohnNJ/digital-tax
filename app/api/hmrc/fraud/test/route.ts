@@ -49,13 +49,9 @@ export async function POST(req: NextRequest) {
       ...fraudPreventionHeaders
     },
   });
-  console.log(token);
-  console.log(fraudPreventionHeaders);
-  console.log(await response.text());
   if (!response.ok) {
     return Response.json({ status: response.status });
   }
   const data = await response.json();
-  console.log(data);
   return NextResponse.json(data);
 }

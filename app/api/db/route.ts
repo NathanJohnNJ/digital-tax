@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/db";
+import { pool } from "@/lib/db";
 
 
 export async function POST(req: NextRequest){
   const { niInput, sub } = await req.json();
-  const client = createClient();
-    await client.connect();
-    await client.query(
+  try {
+    await pool.query(
       `
       UPDATE users
       SET ni_number = $1
@@ -14,6 +13,17 @@ export async function POST(req: NextRequest){
       `,
       [niInput, sub]
     );
-    await client.end();
-    return NextResponse.json({status: 200})
+  }catch(error){
+    console.log(error);
+  }
+  return NextResponse.json({status: 200})
+}
+
+export async function GET(req: NextRequest) {
+  const sub = req.nextUrl.searchParams.get('id')
+  const { rows } = await pool.query(
+    "SELECT * FROM users WHERE auth_id = $1",
+    [sub]
+  );
+  return NextResponse.json(rows[0]);
 }

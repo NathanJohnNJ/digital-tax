@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
 
   const fullUrl = req.nextUrl;
   let baseUrl = fullUrl.toString().slice(0, 22);
-  console.log(baseUrl);
   if (baseUrl !== 'http://localhost:3000/'){
     baseUrl = "https://dt.njtd.xyz/"
   }
