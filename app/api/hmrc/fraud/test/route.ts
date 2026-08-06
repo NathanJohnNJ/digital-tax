@@ -4,10 +4,8 @@ import { cookies } from 'next/headers';
 import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPreventionHeaders";
 
 export async function POST(req: NextRequest) {
-  const fullUrl = req.nextUrl;
-  const baseUrl = fullUrl.toString().slice(0, 22);
   const cookieStore = await cookies();
-  let token = cookieStore.get('application_access_token');
+  let token = cookieStore.get('application_access_token')?.value;
   if(!token){
     const tokenResponse = await fetch(`${HMRC_CONFIG.testApiUrl}/oauth/token`, {
       method: "POST",
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   const clientData = await req.json();
   const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
-  const response = await fetch(`${HMRC_CONFIG.testApiUrl}/test/fraud-prevention-headers/validate`, {
+  const response = await fetch(`${HMRC_CONFIG.testApiUrl}/test/fraud-prevention-headers/business-details-mtd/validation-feedback?connectionMethod=WEB_APP_VIA_SERVER`, {
     method: "GET",
     headers: {
       "Accept": "application/vnd.hmrc.1.0+json",
@@ -51,11 +49,13 @@ export async function POST(req: NextRequest) {
       ...fraudPreventionHeaders
     },
   });
-
+  console.log(token);
+  console.log(fraudPreventionHeaders);
+  console.log(await response.text());
   if (!response.ok) {
     return Response.json({ status: response.status });
   }
-  console.log(response);
-
-  return NextResponse.json(response);
+  const data = await response.json();
+  console.log(data);
+  return NextResponse.json(data);
 }

@@ -86,9 +86,9 @@ export async function buildClientPayload(){
   const userAgent = navigator.userAgent;
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const windowSize = `width=${window.innerWidth}&height=${window.innerHeight}`;
-  const multiFactor = 'OTHER';
-  const applicationName = 'NJTD-MTD';
-  const username = 'Nathan John';
+  const multiFactor = '';
+  const applicationName = 'Digital%20Tax%20by%20NJTD';
+  const username = '595275806704';
 
   return {
     connectionMethod: 'WEB_APP_VIA_SERVER',

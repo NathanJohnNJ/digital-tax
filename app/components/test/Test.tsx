@@ -14,7 +14,7 @@ export default function Test() {
 
     try{
       // const data = await res.json();
-      console.log(res);
+      // console.log(res);
     }catch(error){
       console.error(error);
     }
