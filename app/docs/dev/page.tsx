@@ -3,7 +3,6 @@ import Link from 'next/link';
 export default function DevHome() {
   return (
     <div>
-      <h1 className="text-4xl font-bold mb-6">Developer Documentation</h1>
       <p className="text-lg leading-relaxed">
         Welcome to the developer documentation for the Digital Tax app by NJTD.  
         Use the sidebar to navigate through the documentation, or use the searchbar above to search for specific information.

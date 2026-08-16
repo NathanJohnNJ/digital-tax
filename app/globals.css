@@ -8,13 +8,79 @@ h1, h2{
   font-family: var(--font-geologica);
   font-variation-settings: 'CRSV' 1, 'SHRP' 100;
 }
-
 .fadeOut{
   animation-name: fade-out;
   animation-delay: 5s;
   animation-duration: 3s;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
+}
+
+.checkbox-container {
+  display: block;
+  position: relative;
+  padding-left: 30px;
+  margin: 0 10px;
+  cursor: pointer;
+  font-size: 14px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+.checkmark {
+  position: absolute;
+  top: 2.5px;
+  left: 7.5px;
+  height: 16px;
+  width: 16px;
+  background-color: #eee;
+  border-radius: 15px;
+  transition: all;
+  transition-duration: 0.5s;
+}
+.checkbox-container:hover input ~ .checkmark {
+  background-color: #ddd;
+}
+.checkbox-container input:checked ~ .checkmark {
+  background-color: #214bf3dd;
+}
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+.checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+.checkbox-container .checkmark:after {
+  left: 5px;
+  top: 2px;
+  width: 6.5px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  -webkit-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+  scale: 0.75;
+}
+.slideUp{
+  /* animation: 0.4s ease-in 0s slideUp; */
+  transform: scaleY(0);
+  transform-origin: top;
+}
+.slideDown{
+  animation: 0.4s ease-in-out 0s slideDown;
+  transform-origin: top;
 }
 
 @keyframes fade-out {
@@ -25,5 +91,23 @@ h1, h2{
   100% {
     opacity: 0;
     display: none;
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    transform: scaleY(0);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0);
   }
 }

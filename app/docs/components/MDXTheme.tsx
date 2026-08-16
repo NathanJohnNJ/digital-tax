@@ -4,7 +4,7 @@ import { MDXProvider } from "@mdx-js/react";
 
 const components = {
   h1: (props: any) => (
-    <h1 className="text-4xl font-bold mt-8 mb-4" {...props} />
+    <h1 className="text-6xl font-bold mt-8 mb-4" {...props} />
   ),
   h2: (props: any) => (
     <h2 className="text-3xl font-semibold mt-6 mb-3" {...props} />

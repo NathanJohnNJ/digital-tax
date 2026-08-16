@@ -1,0 +1,27 @@
+<svg viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="blueGrad">
+      <stop offset="35%" stop-color="#040897" />
+      <stop offset="120%" stop-color="#607cfe" />
+    </linearGradient>
+    <linearGradient id="greenGrad1" x1="20%" y1="70%" x2="30%" y2="0%">
+      <stop offset="0%" stop-color="#0F3A12" />
+      <stop offset="100%" stop-color="#4FAF5A" />
+    </linearGradient>
+    <linearGradient id="greenGrad2" x1="20%" y1="70%" x2="30%" y2="0%">
+      <stop offset="0%" stop-color="#2E7A34" />
+      <stop offset="100%" stop-color="#7EEB83" />
+    </linearGradient>
+    <linearGradient id="greenGrad3" x1="20%" y1="70%" x2="35%" y2="0%">
+      <stop offset="0%" stop-color="#3F9C46" />
+      <stop offset="100%" stop-color="#9CFF9F" />
+    </linearGradient>
+  </defs>
+
+  <circle r="9" cx="10" cy="10" stroke="none" fill="url('#blueGrad')" transform-origin="center" transform="rotate(-50)" />
+  <path d="M 4.725 9.596 V 5.647 H 7.906 C 10.508 5.984 11.668 8.642 10.223 10.94 L 8.574 10.942 C 9.797 10.071 9.911 7.351 7.732 6.849 H 5.995 V 9.072 Z M 9.967 11.262 L 8.642 11.248 C 6.725 11.363 4.506 11.968 3.051 13.827 C 6.884 11.637 8.209 13.265 9.967 11.262 Z M 10.591 5.679 H 16.064 V 6.889 H 14.055 V 12.546 H 12.703 V 6.95 H 10.612 Z" fill="white" stroke="white" stroke-width="0.01" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M 4.719 11.981 V 10.075 C 5.051 10.035 5.258 10.006 5.584 9.808 V 11.545 C 5.357 11.643 5.009 11.799 4.719 11.981 Z" fill="url('#greenGrad1')" stroke="none" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M 5.981 11.391 V 9.641 C 5.977 9.4 6.004 9.413 6.118 9.411 H 6.78 C 6.887 9.405 6.895 9.453 6.898 9.605 V 11.123 C 6.563 11.193 6.293 11.269 5.981 11.393 Z" fill="url('#greenGrad2')" stroke="none" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M 7.32 11.04 V 8.454 C 7.323 8.328 7.328 8.327 7.41 8.327 H 8.138 C 8.232 8.326 8.232 8.318 8.229 8.47 V 10.955 C 7.935 10.97 7.634 10.985 7.321 11.038 Z " fill="url('#greenGrad3')" stroke="none" stroke-linejoin="round" stroke-linecap="round" />
+
+</svg> 

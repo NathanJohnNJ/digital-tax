@@ -75,6 +75,27 @@ const getClientPublicPort = async (req: Request) => {
   }
 };
 
+export function getLondonUtcOffset(date = new Date()) {
+  // Get the offset in minutes for Europe/London at the given date
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    timeZoneName: 'short'
+  });
+
+  const parts = formatter.formatToParts(date);
+  const tzName = parts.find(p => p.type === 'timeZoneName')?.value;
+
+  // BST = UTC+1, GMT = UTC+0
+  const offsetHours = tzName === 'BST' ? 1 : 0;
+
+  // Format as UTC±hh:mm
+  const sign = offsetHours >= 0 ? '+' : '-';
+  const hh = String(Math.abs(offsetHours)).padStart(2, '0');
+  const mm = '00';
+
+  return `UTC${sign}${hh}:${mm}`;
+}
+
 export async function buildClientPayload(){
   const publicPort = await getClientPublicPort(new Request(window.location.href));
   const deviceID = await getDeviceID();
@@ -82,7 +103,7 @@ export async function buildClientPayload(){
   const screenDetails = await getScreenDetails();
 
   const userAgent = navigator.userAgent;
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezone = getLondonUtcOffset();
   const windowSize = `width=${window.innerWidth}&height=${window.innerHeight}`;
   const multiFactor = '';
   const applicationName = 'Digital%20Tax%20by%20NJTD';
