@@ -2,8 +2,9 @@
 
 import { useUser } from "@auth0/nextjs-auth0/client";
 import HMRCButton from './auth/hmrcAccountLinkButton';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { buildClientPayload } from '@/client/fraud/clientData';
+import BusinessButton from './ui/account/BusinessButton';
 
 function getInitials(name?: string | null, email?: string | null): string {
   if (name) {
@@ -19,8 +20,8 @@ function getInitials(name?: string | null, email?: string | null): string {
 export default function Profile(props: HMRCProps) {
   const [ shown, setShown ] = useState(false);
   const [ entered, setEntered ] = useState(false);
-  const [ niInput, setNIInput ] = useState("");
-  const [ businessList, setBusinessList ] = useState(null);
+  const [ nino, setNino ] = useState("");
+  const [ businessList, setBusinessList ] = useState<any>(null);
   const { user, isLoading } = useUser();
   const { accessToken } = props;
   const connected = accessToken ? true : false;
@@ -34,25 +35,54 @@ export default function Profile(props: HMRCProps) {
 
   async function NIHandler(){
     const regex = /^[A-Z]{2}\d{6}[A-Z]$/;
-    if(regex.test(niInput)){
+    if(regex.test(nino)){
       setEntered(true);
       await fetch('/api/db', {
         method: 'POST',
         body: JSON.stringify({
-          niInput: niInput,
+          nino,
           sub: user!.sub
         })
       })
       const clientData = await buildClientPayload();
       const businessResponse = await fetch('/api/hmrc/userRestrictedAuth/businessDetails', {
         method: 'POST',
-        body: JSON.stringify({clientData, niInput})
+        body: JSON.stringify({clientData, nino})
       })
       const businessData = await businessResponse.json();
       setBusinessList(businessData);
       console.log(businessData);
+      console.log(businessList)
     }
   }
+
+  useEffect(() => {
+    async function checkForNino(){
+        try {
+        const response = await fetch(`/api/db?id=${user!.sub}`, {
+          method: 'GET'
+        });
+        const userDetails = await response.json();
+        setNino(userDetails.ni_number);
+        setEntered(true);
+        await NIHandler();
+      }catch (error){
+        console.log(error);
+      }
+    }
+    async function addCookiesPreferences(){
+      try{
+        const cookiesResponse = await fetch(`/api/cookies?id=${user!.sub}`, {
+          method: 'GET'
+        })
+        return cookiesResponse;
+      } catch(error){
+        console.log(error);
+      }
+    }
+    checkForNino();
+    addCookiesPreferences();
+  }, [user])
 
   if (isLoading) return <p className="text-xs text-gray-500">Loading...</p>;
   if (!user) return null;
@@ -109,7 +139,7 @@ export default function Profile(props: HMRCProps) {
               connected &&
               <div className=" relative flex items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-grey-100 border border-gray-500 rounded-full py-1.5 pr-1.5 pl-4 text-[14px] ml-2 text-gray-700 w-full">
                 <span className="truncate font-semibold" title="National Insurance number">N.I. Number</span>
-                <input className="bg-white/90 rounded-full pl-3 font-light" disabled={entered} placeholder="AA000000A" value={niInput} onChange={e=>setNIInput(e.target.value)} />
+                <input id="nino" name="nino" className="bg-white/90 rounded-full pl-3 font-light" disabled={entered} placeholder="AA000000A" value={nino} onChange={e=>setNino(e.target.value)} />
                 <button className="w-7 h-7 bg-gray-500 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0" onClick={NIHandler}
                 >
                   <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
@@ -133,10 +163,16 @@ export default function Profile(props: HMRCProps) {
           </div>
         </div>
       </div>
-      { businessList &&
-        <div className="flex flex-col justify-center items-center my-6 gap-2 bg-gray-100 rounded-4xl p-6 text-[14px] text-gray-700 max-w-full border border-gray-500 shadow-2xl">
+      { businessList && <></>
+        // <div className="flex flex-col justify-center items-center my-6 gap-2 bg-gray-100 rounded-4xl p-6 text-[14px] text-gray-700 max-w-full border border-gray-500 shadow-2xl">
+        //   { businessList.map((business: any, i: number) => {
+        //     return (
+        //       <BusinessButton business={business} key={i} />
+        //     )
+        //   })
 
-        </div>
+        //   }
+        // </div>
       }
     </>
   );

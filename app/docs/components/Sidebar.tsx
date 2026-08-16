@@ -24,12 +24,14 @@ const sections = {
 export default function Sidebar() {
   const pathname = usePathname();
   const homeActive = pathname === '/docs';
+  const userActive = pathname === '/docs/user';
+  const devActive = pathname === '/docs/dev';
   return (
-    <aside className="w-64 border-r border-neutral-200 p-6 space-y-8">
-      <Link href="/docs" className={`px-2 rounded ${ homeActive ? "bg-neutral-200 font-bold" : "hover:bg-neutral-100 font-semibold hover:font-bold" }`}><h3 className="text-lg">Home</h3></Link>
+    <aside className="w-fit border-r border-neutral-300 py-6 pl-6 space-y-8 mt-30 -mr-5">
+      <Link href="/docs" className={`px-2 rounded-l-2xl ${ homeActive ? "block px-2 py-1 bg-linear-to-r from-mauve-100 to-white to-60% h-min font-bold" : "hover:bg-linear-to-r hover:from-mauve-100 hover:to-white hover:to-60% font-semibold hover:font-bold" }`}><h3 className="text-2xl">Home</h3></Link>
       {Object.entries(sections).map(([section, links]) => (
         <div key={section}>
-          <Link href={links[0].href}><h3 className="text-lg font-semibold mb-3">{section}</h3></Link>
+          <Link href={links[0].href} className={`text-xl block px-2 py-1 rounded-l-2xl ${ links[0].href === "/docs/user" && userActive ? "bg-linear-to-r from-mauve-100 to-white to-60% h-min font-bold" : links[0].href === "/docs/dev" && devActive ? "bg-linear-to-r from-mauve-100 to-white to-60% font-bold" : "hover:bg-linear-to-r hover:from-mauve-100 hover:to-white hover:to-60% font-semibold hover:font-bold" }`}><h3 className="text-xl">{section}</h3></Link>
           <ul className="space-y-2">
             {links.map((link, i) => {
               if (i === 0){
@@ -38,7 +40,7 @@ export default function Sidebar() {
                 const active = pathname === link.href;
                 return (
                   <li key={link.href}>
-                    <Link href={link.href} className={`block px-2 py-1 rounded ${ active ? "bg-neutral-200 font-medium text-lg" : "hover:bg-neutral-100 hover:font-medium hover:text-lg" }`}>
+                    <Link href={link.href} className={`block px-2 py-1 rounded-l-2xl ${ active ? "bg-linear-to-r from-mauve-100 to-white to-60% font-medium text-lg" : "hover:bg-linear-to-r hover:from-mauve-100 hover:to-white hover:to-60% hover:font-medium hover:text-lg" }`}>
                       {link.title}
                     </Link>
                   </li>

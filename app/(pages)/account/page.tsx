@@ -12,27 +12,29 @@ export default async function AccountHome(){
   const accessToken = cookieStore.get('access_token')?.value;
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-sky-100 w-full h-full border-2 -z-50 border-blue-500 rounded-2xl rounded-tl-none transition-all duration-75">
-      {user ? (
-        <>
-          <h1 className="text-[17px] font-bold text-gray-900 tracking-tight">Your Account</h1>
-          <div className="h-3" />
-          <div className="w-full h-px bg-gray-100" />
-          <Profile accessToken={accessToken}/>
-          <div className="h-6" />
-          <LogoutButton />
-        </>
-      ) : (
-        <div className="flex flex-col align-items-center justify-content-center">
-          <h3 className="text-xl font-bold text-stone-700 tracking-tight text-center">Submit your quarterly updates and end of year tax returns easily with</h3>
-          <Image src="/images/rectWithNJTD.png" width="500" height="100" alt="Digital Tax logo." />
-          <p className="text-lg text-gray-400 text-center mt-2">
-            Get started by logging in to your account
-          </p>
-          <div className="h-3" />
-          <LoginButton />
-        </div>
-      )}
+    <div className="flex flex-col items-center justify-center p-3 bg-sky-50 w-full h-full border-2 -z-50 border-blue-500 rounded-2xl rounded-tl-none transition-all duration-75">
+      <div className="w-full h-full rounded-2xl bg-white p-6 flex flex-col items-center justify-center">
+        {user ? (
+          <>
+            <h1 className="text-[17px] font-bold text-gray-900 tracking-tight">Your Account</h1>
+            <div className="h-3" />
+            <div className="w-full h-px bg-gray-100" />
+            <Profile accessToken={accessToken}/>
+            <div className="h-6" />
+            <LogoutButton />
+          </>
+        ) : (
+          <div className="flex flex-col align-items-center justify-content-center">
+            <h3 className="text-xl font-bold text-stone-700 tracking-tight text-center">Submit your quarterly updates and end of year tax returns easily with</h3>
+            <Image src="/images/rectWithNJTD.png" width="500" height="100" alt="Digital Tax logo." />
+            <p className="text-lg text-gray-400 text-center mt-2">
+              Get started by logging in to your account
+            </p>
+            <div className="h-3" />
+            <LoginButton />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

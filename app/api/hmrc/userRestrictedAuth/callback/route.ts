@@ -1,10 +1,18 @@
 import { HMRC_CONFIG } from "@/config/hmrc";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
+import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken'
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const code = req.nextUrl.searchParams.get('code');
+  const authError = req.nextUrl.searchParams.get('error');
+
+  if (authError){
+    const errorDescription = req.nextUrl.searchParams.get('error_description');
+    const error_code = req.nextUrl.searchParams.get('error_code');
+    return Response.json({ error: `${authError} - ${error_code} \n ${errorDescription}`}, { status: 400})
+  }
 
   if (!code) {
     return Response.json({ error: "Missing authorization code" }, { status: 400 });
@@ -12,7 +20,8 @@ export async function GET(req: NextRequest) {
 
   cookieStore.set('code', code, {
     httpOnly: true,
-    secure: true
+    secure: true,
+    maxAge: 600
   });
 
   const fullUrl = req.nextUrl;
@@ -21,37 +30,19 @@ export async function GET(req: NextRequest) {
     baseUrl = "https://dt.njtd.xyz/"
   }
   
-  const tokenResponse = await fetch(`${HMRC_CONFIG.testTokenUrl}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      code: code,
-      client_id: HMRC_CONFIG.clientId,
-      client_secret: HMRC_CONFIG.clientSecret,
-      redirect_uri: HMRC_CONFIG.redirectUri
-    })
-  });
-
-  if (!tokenResponse.ok) {
-    return Response.json({ status: tokenResponse.status });
-  }
-let tokens;
-  try {
-    const text = await tokenResponse.text();
-    tokens = JSON.parse(text);
+  let token;
+  if(!cookieStore.has('access_token')){ 
+    token = await requestUserAccessToken();
     const options = {
       httpOnly: true,
-      secure: true, 
-      maxAge: tokens.expires_in
+      maxAge: token.expires_in,
+      secure: process.env.NODE_ENV === "production"
     }
-    cookieStore.set('access_token', tokens.access_token, options);
-    cookieStore.set('refresh_token', tokens.refresh_token, options);
-  } catch (err) {
-    console.error("Failed to parse token response:", err);
-    return Response.json({ error: "Invalid token response" }, { status: 500 });
+    cookieStore.set('access_token', token.access_token, options);
+    cookieStore.set('refresh_token', token.refresh_token, options);
+    token = token.access_token;
+  } else {
+    token = cookieStore.get('access_token')?.value;
   }
 
   return NextResponse.redirect(`${baseUrl}/account`);

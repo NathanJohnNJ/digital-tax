@@ -13,16 +13,16 @@ export default function Test() {
     });
 
     try{
-      // const data = await res.json();
-      // console.log(res);
+      const data = await res.json();
+      console.log(res);
     }catch(error){
       console.error(error);
     }
   };
 
   return (
-    <button onClick={handleClick} className="bg-black text-white p-3 rounded-full cursor-pointer">
-      Run Test
+    <button onClick={handleClick} className="bg-linear-to-tr from-amber-700 to-amber-200 to-80% hover:to-100% text-white p-3 rounded-full cursor-pointer m-10">
+      Test FPHeaders
     </button>
   );
 }
