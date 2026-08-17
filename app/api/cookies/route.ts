@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
     maxAge: COOKIE_MAX_AGE_SECONDS
   };
 
-  cookieStore.set('allow_cookies', JSON.stringify(selected), options);
+  const cookieValue = JSON.stringify(selected);
+  cookieStore.set('allow_cookies', cookieValue, options);
 
   const id = req.nextUrl.searchParams.get('id');
   if (!id) {
@@ -62,10 +63,11 @@ export async function GET(req: NextRequest) {
       maxAge: COOKIE_MAX_AGE_SECONDS
     };
 
-    const allowCookies = response.rows[0]?.allow_cookies ?? false;
-    cookieStore.set('allow_cookies', allowCookies, options);
+    const rawAllowCookies = response.rows[0]?.allow_cookies;
+    const parsedAllowCookies = typeof rawAllowCookies === 'string' ? rawAllowCookies : JSON.stringify(rawAllowCookies ?? false);
+    cookieStore.set('allow_cookies', parsedAllowCookies, options);
 
-    return NextResponse.json({ status: 200, allowCookies });
+    return NextResponse.json({ status: 200, allowCookies: parsedAllowCookies });
   } catch (error) {
     console.log(error);
     return NextResponse.json({ error: "DB update failed" }, { status: 500 });

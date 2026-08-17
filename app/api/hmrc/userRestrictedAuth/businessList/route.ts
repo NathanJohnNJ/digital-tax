@@ -5,7 +5,7 @@ import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPrevention
 import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
 
 export async function POST(req: NextRequest) {
-  const { clientData, nino, businessID } = await req.json();
+  const { clientData, nino } = await req.json();
   const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
   const cookieStore = await cookies();
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Missing access token" }, { status: 401 });
   }
 
-  const requestUrl = `${HMRC_CONFIG.testApiUrl}/individuals/business/details/${nino}/${businessID}`;
+  const requestUrl = `${HMRC_CONFIG.testApiUrl}/individuals/business/details/${nino}/list`;
   const requestHeaders = {
     "Accept": "application/vnd.hmrc.2.0+json",
     "Authorization": `Bearer ${token}`,

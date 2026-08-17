@@ -17,7 +17,7 @@ export default function DocsLayout({
             <Search />
         </div>
         
-        <MDXTheme>{children}</MDXTheme>
+        <MDXTheme><div className="bg-mauve-50 shadow-xl rounded-2xl w-full h-full overflow-y-auto">{children}</div></MDXTheme>
       </main>
     </div>
   );

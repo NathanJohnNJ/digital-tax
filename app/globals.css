@@ -82,7 +82,75 @@ h1, h2{
   animation: 0.4s ease-in-out 0s slideDown;
   transform-origin: top;
 }
+.delay-entry{
+  animation: 1.4s ease-in-out 1s slideRight;
+  transform-origin: left;
+  animation-fill-mode: both;
+}
 
+.bg-amber-50{
+  background-color: var(--color-amber-50);
+}
+.bg-amber-75{
+  background-color: var(--color-amber-50);
+}
+.bg-amber-50:hover{
+  background-color: var(--color-gray-50);
+}
+.bg-sky-50{
+  background-color: var(--color-sky-50);
+}
+.bg-sky-75{
+  background-color: var(--color-sky-50);
+}
+.bg-sky-50:hover{
+  background-color: var(--color-gray-50);
+}
+.bg-mauve-100{
+  background-color: var(--color-mauve-100);
+}
+.bg-mauve-75{
+  background-color: var(--color-mauve-100);
+}
+.bg-mauve-100:hover{
+  background-color: var(--color-gray-50);
+}
+.bg-taupe-50{
+  background-color: var(--color-taupe-50);
+}
+.bg-taupe-75{
+  background-color: var(--color-taupe-50);
+}
+.bg-taupe-50:hover{
+  background-color: var(--color-gray-50);
+}
+.bg-slate-50{
+  background-color: var(--color-slate-50);
+}
+.bg-slate-75{
+  background-color: var(--color-slate-50);
+}
+.bg-slate-50:hover{
+  background-color: var(--color-gray-50);
+}
+.bg-neutral-50{
+  background-color: var(--color-neutral-50);
+}
+.bg-neutral-75{
+  background-color: var(--color-neutral-50);
+}
+.bg-neutral-50:hover{
+  background-color: var(--color-gray-50);
+}
+.bg-green-50{
+  background-color: var(--color-green-50);
+}
+.bg-green-75{
+  background-color: var(--color-green-50);
+}
+.bg-green-50:hover{
+  background-color: var(--color-gray-50);
+}
 @keyframes fade-out {
   0% {
     opacity: 1;
@@ -103,11 +171,13 @@ h1, h2{
   }
 }
 
-@keyframes slideUp {
+@keyframes slideRight {
   0% {
-    transform: scaleY(1);
+    transform: scaleX(0);
+    opacity: 0;
   }
   100% {
-    transform: scaleY(0);
+    transform: scaleX(1);
+    opacity: 1;
   }
 }

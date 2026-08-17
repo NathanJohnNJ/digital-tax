@@ -26,12 +26,9 @@ function isTokenPayload(value: unknown): value is TokenPayload {
 }
 
 export async function requestUserAccessToken(scopes?: any): Promise<TokenRequestResult> {
-  console.log('Requesting new application restricted access token');
-
   const cookieStore = await cookies();
   const code = cookieStore.get('code')?.value;
   if(!code){
-    console.log("[HMRC debug] missing authorization code in cookie store");
     return { ok: false, status: 400, body: { error: "Missing authorization code" } };
   }
 

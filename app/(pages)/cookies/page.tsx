@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default async function Page() {
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-taupe-100 w-full h-full border-2 border-taupe-500 rounded-2xl transition-all duration-75 text-slate-700 mr-0.5">
+    <div className="flex flex-col items-center justify-center p-6 bg-taupe-75 w-full h-full border-2 border-taupe-500 rounded-2xl transition-all duration-75 text-slate-700 mr-0.5">
       <div className="flex flex-col items-center p-8 w-full h-full bg-white overflow-y-scroll rounded-xl shadow-2xl">
         <h2 className="font-extrabold text-5xl">Digital Tax</h2>
         <h2 className="font-extrabold text-5xl">Cookie Policy</h2>
@@ -65,9 +65,9 @@ export default async function Page() {
             We may update this Cookie Policy from time to time. We will publish the updated policy on this page and, where required, obtain fresh consent for non-essential cookies.
           </p>
 
-          <p className="ml-2 mt-6">
+          <div className="ml-2 mt-6">
             <p className="text-center"><strong>Last updated:</strong><br></br><span title="12th August 2026" className="underline font-semibold text-lg">12/08/2026</span></p>
-          </p>
+          </div>
 
           <h3 className="font-bold text-2xl mt-6 mb-1">Contact</h3>
           <p className="ml-2">
