@@ -55,14 +55,23 @@ export async function POST(req: NextRequest) {
       businessResponse = businessResponseText;
     }
 
-    if(!businessRequest.ok){
-      return Response.json({ businessResponse }, { status: 400 });
-    }
-    return NextResponse.json(businessResponse);
-  } catch (err){
-    console.error(err)
+    if (!businessRequest.ok) {
+      const message = typeof businessResponse?.message === 'string'
+        ? businessResponse.message
+        : 'HMRC business list request failed';
 
-    return NextResponse.json({ error: err }, { status: 500 });
+      return NextResponse.json(
+        { error: message, status: businessRequest.status },
+        { status: businessRequest.status }
+      );
+    }
+
+    return NextResponse.json(businessResponse);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('HMRC business list request failed:', err);
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
 }
