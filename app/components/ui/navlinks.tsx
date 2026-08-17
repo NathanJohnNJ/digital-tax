@@ -18,7 +18,6 @@ const links = [
 
 export default function NavLinks({ canAccessTesting = false }: { canAccessTesting?: boolean }) {
   const pathname = usePathname();
-  const isTestingAllowed = canAccessTesting;
 
   return (
     <div className="flex flex-col gap-y-2 h-full justify-between">
@@ -54,16 +53,18 @@ export default function NavLinks({ canAccessTesting = false }: { canAccessTestin
           <DocumentIcon className="w-6" />
           <p className="hidden md:block">Documentation</p>
         </Link>
-        <Link key="Testing" href="/testing"
-          className={clsx(
-          'flex h-12 grow items-center gap-2 rounded-l-md bg-gray-50 p-3 text-sm font-medium hover:bg-amber-50 hover:text-amber-700 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
-          {
-            'bg-amber-50 text-amber-700 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === '/testing'
-          },
-        )}>
-          <ClipboardDocumentCheckIcon className="w-6" />
-          <p className="hidden md:block">Testing</p>
-        </Link>
+        {canAccessTesting && (
+          <Link key="Testing" href="/testing"
+            className={clsx(
+            'flex h-12 grow items-center gap-2 rounded-l-md bg-gray-50 p-3 text-sm font-medium hover:bg-amber-50 hover:text-amber-700 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
+            {
+              'bg-amber-50 text-amber-700 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === '/testing'
+            },
+          )}>
+            <ClipboardDocumentCheckIcon className="w-6" />
+            <p className="hidden md:block">Testing</p>
+          </Link>
+        )}
       </div>
       <div className="flex flex-col gap-y-2">
         <Link key="Cookies" href="/cookies"

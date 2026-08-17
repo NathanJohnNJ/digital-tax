@@ -3,24 +3,16 @@ import NavLinks from './navlinks';
 import Image from 'next/image';
 import { auth0 } from '@/lib/auth0';
 
-const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS;
+const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS ?? '';
 const allowedTestingEmails = testingAllowedEmailsValue
-  ? testingAllowedEmailsValue
-      .split(',')
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean)
-  : [];
-
-if (process.env.NODE_ENV !== 'production' && testingAllowedEmailsValue === undefined) {
-  throw new Error('TESTING_ALLOWED_USER_EMAILS is required in non-production environments.');
-}
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
 
 export default async function SideNav() {
   const session = await auth0.getSession();
   const userEmail = session?.user?.email?.toLowerCase();
-  const canAccessTesting = !process.env.NODE_ENV || process.env.NODE_ENV !== 'production'
-    ? Boolean(userEmail && allowedTestingEmails.includes(userEmail))
-    : false;
+  const canAccessTesting = Boolean(userEmail && allowedTestingEmails.includes(userEmail));
 
   return (
     <div className="flex h-full flex-col py-4 w-min bg-linear-40 from-zinc-300 to-zinc-50 to-130%">
