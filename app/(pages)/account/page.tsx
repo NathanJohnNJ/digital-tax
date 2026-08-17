@@ -12,7 +12,7 @@ export default async function AccountHome(){
   const accessToken = cookieStore.get('access_token')?.value;
 
   return (
-    <div className="flex flex-col items-center justify-center p-3 bg-sky-50 w-full h-full border-2 -z-50 border-blue-500 rounded-2xl rounded-tl-none transition-all duration-75">
+    <div className="flex flex-col items-center justify-center p-3 bg-sky-75 w-full h-full border-2 -z-50 border-blue-500 rounded-2xl rounded-tl-none transition-all duration-75">
       <div className="w-full h-full rounded-2xl bg-white p-6 flex flex-col items-center justify-center overflow-y-scroll">
         {user ? (
           <>

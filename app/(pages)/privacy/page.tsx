@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default async function Page() {
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-neutral-100 w-full h-full border-2 border-neutral-500 rounded-2xl transition-all duration-75 text-slate-700 mr-0.5">
+    <div className="flex flex-col items-center justify-center p-6 bg-neutral-75 w-full h-full border-2 border-neutral-500 rounded-2xl transition-all duration-75 text-slate-700 mr-0.5">
       <div className="flex flex-col items-center p-8 w-full h-full bg-white overflow-y-scroll rounded-xl shadow-2xl">
         <h2 className="font-extrabold text-5xl">Digital Tax</h2>
         <h2 className="font-extrabold text-5xl">Privacy Policy</h2>

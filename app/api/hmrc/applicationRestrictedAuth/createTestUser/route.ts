@@ -4,10 +4,17 @@ import { cookies } from 'next/headers';
 import { auth0 } from '@/lib/auth0';
 import { requestAppAccessToken } from '@/app/actions/requestAppAccessToken';
 
-const allowedTestingEmails = (process.env.TESTING_ALLOWED_USER_EMAILS!)
-  .split(',')
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
+const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS;
+const allowedTestingEmails = testingAllowedEmailsValue
+  ? testingAllowedEmailsValue
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  : [];
+
+if (process.env.NODE_ENV !== 'production' && testingAllowedEmailsValue === undefined) {
+  throw new Error('TESTING_ALLOWED_USER_EMAILS is required in non-production environments.');
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth0.getSession();

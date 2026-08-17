@@ -25,8 +25,6 @@ function isTokenPayload(value: unknown): value is TokenPayload {
 }
 
 export async function requestAppAccessToken(scopes?: any): Promise<TokenRequestResult> {
-  console.log('Requesting new application restricted access token');
-
   let searchParams;
   if(!scopes){
     searchParams = {
