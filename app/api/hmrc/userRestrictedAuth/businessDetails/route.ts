@@ -10,26 +10,35 @@ export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   // const ninoIsValid = /^[A-Z]{2}\d{6}[A-Z]$/.test(String(nino ?? ""));
 
-  let token;
+  let token: string | undefined;
   if(!cookieStore.has('access_token')){ 
-    token = await requestUserAccessToken();
+    const tokenResult = await requestUserAccessToken();
+    if (!tokenResult.ok) {
+      return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
+    }
+
     const options = {
       httpOnly: true,
-      maxAge: token.expires_in,
+      maxAge: tokenResult.tokens.expires_in,
       secure: process.env.NODE_ENV === "production"
+    };
+    cookieStore.set('access_token', tokenResult.tokens.access_token, options);
+    if (tokenResult.tokens.refresh_token) {
+      cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
     }
-    cookieStore.set('access_token', token.access_token, options);
-    cookieStore.set('refresh_token', token.refresh_token, options);
-    token = token.access_token;
+    token = tokenResult.tokens.access_token;
   } else {
     token = cookieStore.get('access_token')?.value;
+  }
+
+  if (!token) {
+    return Response.json({ error: "Missing access token" }, { status: 401 });
   }
 
   const requestUrl = `${HMRC_CONFIG.testApiUrl}/individuals/business/details/${nino}/list`;
   const requestHeaders = {
     "Accept": "application/vnd.hmrc.2.0+json",
     "Authorization": `Bearer ${token}`,
-    "Gov-Test-Scenario": "N/A",
     ...fraudPreventionHeaders
   };
 

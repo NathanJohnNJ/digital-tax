@@ -12,15 +12,16 @@ export async function POST(req: NextRequest){
       `,
       [nino, sub]
     );
-  }catch(error){
+  } catch (error) {
     console.log(error);
-    NextResponse.json({ error: "DB update failed" }, { status: 500 })
+    return NextResponse.json({ error: "DB update failed" }, { status: 500 });
   }
-  return NextResponse.json({status: 200})
+
+  return NextResponse.json({ status: 200 });
 }
 
 export async function GET(req: NextRequest) {
-  const id = req.nextUrl.searchParams.get('id')
+  const id = req.nextUrl.searchParams.get('id');
   const { rows } = await pool.query(
     "SELECT * FROM users WHERE auth_id = $1",
     [id]

@@ -2,19 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { cookies } from 'next/headers';
 
-export async function POST(req: NextRequest){
+const COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+
+export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const { selected } = await req.json();
-  console.log(selected)
+  console.log(selected);
+
   const options = {
     httpOnly: true,
-    secure: true, 
-    maxAge: 7 * 86400
-  }
+    secure: true,
+    maxAge: COOKIE_MAX_AGE_SECONDS
+  };
+
   cookieStore.set('allow_cookies', JSON.stringify(selected), options);
-  
+
   const id = req.nextUrl.searchParams.get('id');
-  if(!id) return;
+  if (!id) {
+    return NextResponse.json({ error: "Missing user id" }, { status: 400 });
+  }
+
   try {
     await pool.query(
       `
@@ -24,16 +31,22 @@ export async function POST(req: NextRequest){
       `,
       [JSON.stringify(selected), id]
     );
-  }catch(error){
+  } catch (error) {
     console.log(error);
-    NextResponse.json({ error: "DB update failed" }, { status: 500 })
+    return NextResponse.json({ error: "DB update failed" }, { status: 500 });
   }
-  return NextResponse.json({status: 200})
+
+  return NextResponse.json({ status: 200 });
 }
 
-export async function GET(req: NextRequest){
-  const id = req.nextUrl.searchParams.get('id')
+export async function GET(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get('id');
   const cookieStore = await cookies();
+
+  if (!id) {
+    return NextResponse.json({ error: "Missing user id" }, { status: 400 });
+  }
+
   try {
     const response = await pool.query(
       `
@@ -42,16 +55,19 @@ export async function GET(req: NextRequest){
       `,
       [id]
     );
+
     const options = {
       httpOnly: true,
-      secure: true, 
-      maxAge: 7 * 86400000
-    }
-    const allowCookies = response.rows[0].allow_cookies;
+      secure: true,
+      maxAge: COOKIE_MAX_AGE_SECONDS
+    };
+
+    const allowCookies = response.rows[0]?.allow_cookies ?? false;
     cookieStore.set('allow_cookies', allowCookies, options);
-    return NextResponse.json({status: 200}, allowCookies)
-  }catch(error){
+
+    return NextResponse.json({ status: 200, allowCookies });
+  } catch (error) {
     console.log(error);
-    return NextResponse.json({ error: "DB update failed" }, { status: 500 })
+    return NextResponse.json({ error: "DB update failed" }, { status: 500 });
   }
 }

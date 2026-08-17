@@ -17,15 +17,15 @@ export default function BusinessDetails(props: any) {
       <div className="flex flex-col justify-center items-center gap-2 bg-gray-100 rounded-4xl p-6 text-[14px] text-gray-700 w-full border-2 border-gray-500 shadow-2xl">
         <div className="flex items-center">
           <label className="font-bold">Business ID:</label>
-          <input disabled className="font-light">{business.businessId}</input>
+          <input disabled className="font-light" value={business.businessId}></input>
         </div>
         <div className="flex items-center">
           <label className="font-bold">Business Name:</label>
-          <input disabled className="font-light">{business.tradingName}</input>
+          <input disabled className="font-light" value={business.tradingName}></input>
         </div>
         <div className="flex items-center">
           <label className="font-bold">Business Type:</label>
-          <input disabled className="font-light">{business.tradingType}</input>
+          <input disabled className="font-light" value={business.tradingType}></input>
         </div>
       </div>
     </button>

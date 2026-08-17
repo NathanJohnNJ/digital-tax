@@ -6,18 +6,27 @@ import { requestAppAccessToken } from '@/app/actions/requestAppAccessToken';
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
-  let token;
+  let token: string | undefined;
+
   if(!cookieStore.has('application_access_token')){ 
-    token = await requestAppAccessToken();
+    const tokenResult = await requestAppAccessToken();
+    if (!tokenResult.ok) {
+      return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
+    }
+
     const options = {
       httpOnly: true,
-      maxAge: token.expires_in,
+      maxAge: tokenResult.tokens.expires_in,
       secure: process.env.NODE_ENV === "production"
-    }
-    cookieStore.set('application_access_token', token.access_token, options);
-    token = token.access_token
+    };
+    cookieStore.set('application_access_token', tokenResult.tokens.access_token, options);
+    token = tokenResult.tokens.access_token;
   } else {
     token = cookieStore.get('application_access_token')?.value;
+  }
+
+  if (!token) {
+    return Response.json({ error: "Missing application access token" }, { status: 401 });
   }
   
   const clientData = await req.json();
