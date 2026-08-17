@@ -30,19 +30,29 @@ export async function GET(req: NextRequest) {
     baseUrl = "https://dt.njtd.xyz/"
   }
   
-  let token;
+  let token: string | undefined;
   if(!cookieStore.has('access_token')){ 
-    token = await requestUserAccessToken();
+    const tokenResult = await requestUserAccessToken();
+    if (!tokenResult.ok) {
+      return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
+    }
+
     const options = {
       httpOnly: true,
-      maxAge: token.expires_in,
+      maxAge: tokenResult.tokens.expires_in,
       secure: process.env.NODE_ENV === "production"
+    };
+    cookieStore.set('access_token', tokenResult.tokens.access_token, options);
+    if (tokenResult.tokens.refresh_token) {
+      cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
     }
-    cookieStore.set('access_token', token.access_token, options);
-    cookieStore.set('refresh_token', token.refresh_token, options);
-    token = token.access_token;
+    token = tokenResult.tokens.access_token;
   } else {
     token = cookieStore.get('access_token')?.value;
+  }
+
+  if (!token) {
+    return Response.json({ error: "Missing access token" }, { status: 401 });
   }
 
   return NextResponse.redirect(`${baseUrl}/account`);

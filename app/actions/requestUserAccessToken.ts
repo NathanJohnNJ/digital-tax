@@ -3,14 +3,36 @@
 import { HMRC_CONFIG } from "@/config/hmrc";
 import { cookies } from 'next/headers';
 
-export async function requestUserAccessToken(scopes?: any){
+type TokenPayload = {
+  access_token: string;
+  expires_in: number;
+  refresh_token?: string;
+  token_type?: string;
+  scope?: string;
+  [key: string]: unknown;
+};
+
+export type TokenRequestResult =
+  | { ok: true; tokens: TokenPayload }
+  | { ok: false; status: number; body: unknown };
+
+function isTokenPayload(value: unknown): value is TokenPayload {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const token = value as Record<string, unknown>;
+  return typeof token.access_token === 'string' && typeof token.expires_in === 'number';
+}
+
+export async function requestUserAccessToken(scopes?: any): Promise<TokenRequestResult> {
   console.log('Requesting new application restricted access token');
 
   const cookieStore = await cookies();
   const code = cookieStore.get('code')?.value;
   if(!code){
     console.log("[HMRC debug] missing authorization code in cookie store");
-    return Response.json({ error: "Missing authorization code" }, { status: 400 });
+    return { ok: false, status: 400, body: { error: "Missing authorization code" } };
   }
 
   let searchParams;
@@ -41,15 +63,29 @@ export async function requestUserAccessToken(scopes?: any){
   });
 
   if (!tokenResponse.ok) {
-    const tokenErrorText = await tokenResponse.text();
-    return Response.json({ status: tokenResponse.status, body: tokenErrorText }, { status: tokenResponse.status });
+    let body: unknown;
+    try {
+      body = await tokenResponse.json();
+    } catch {
+      body = await tokenResponse.text();
+    }
+
+    return { ok: false, status: tokenResponse.status, body };
   }
 
   try {
-    const tokens = await tokenResponse.json();
-    return tokens;
+    const payload = await tokenResponse.json();
+    if (!isTokenPayload(payload)) {
+      return {
+        ok: false,
+        status: 500,
+        body: { error: "Invalid token response" }
+      };
+    }
+
+    return { ok: true, tokens: payload };
   } catch (err) {
     console.error("Failed to parse token response:", err);
-    return Response.json({ error: "Invalid token response" }, { status: 500 });
+    return { ok: false, status: 500, body: { error: "Invalid token response" } };
   }
 }

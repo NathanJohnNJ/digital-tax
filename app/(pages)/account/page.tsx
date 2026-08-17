@@ -13,10 +13,10 @@ export default async function AccountHome(){
 
   return (
     <div className="flex flex-col items-center justify-center p-3 bg-sky-50 w-full h-full border-2 -z-50 border-blue-500 rounded-2xl rounded-tl-none transition-all duration-75">
-      <div className="w-full h-full rounded-2xl bg-white p-6 flex flex-col items-center justify-center">
+      <div className="w-full h-full rounded-2xl bg-white p-6 flex flex-col items-center justify-center overflow-y-scroll">
         {user ? (
           <>
-            <h1 className="text-[17px] font-bold text-gray-900 tracking-tight">Your Account</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-3">Your Account</h1>
             <div className="h-3" />
             <div className="w-full h-px bg-gray-100" />
             <Profile accessToken={accessToken}/>

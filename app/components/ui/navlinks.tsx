@@ -9,6 +9,9 @@ import {
 import Link from 'next/link';
 import clsx from 'clsx';
 import { usePathname } from 'next/navigation';
+import { useUser } from '@auth0/nextjs-auth0/client';
+
+const allowedTestingEmails = [process.env.TESTING_ALLOWED_USER_EMAILS];
 
 const links = [
   { name: 'Home', href: '/', icon: HomeIcon },
@@ -19,11 +22,17 @@ const links = [
 
 export default function NavLinks() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const isTestingAllowed = Boolean(user?.email && allowedTestingEmails.includes(user.email.toLowerCase()));
+
   return (
     <div className="flex flex-col gap-y-2 h-full justify-between">
       <div className="flex flex-col gap-y-2">
       {links.map((link) => {
         const LinkIcon = link.icon;
+        if (link.href === '/testing' && !isTestingAllowed) {
+          return null;
+        }
         if (link.href==="/"){
           return (
             <Link key={link.name} href={link.href}

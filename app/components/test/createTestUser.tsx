@@ -17,13 +17,13 @@ export default function CreateTestUser() {
 
   async function clickHandle(){
     console.log(selected);
-    const response = await fetch(`http://localhost:3000/api/hmrc/applicationRestrictedAuth/createTestUser`,{
+    const response = await fetch('/api/hmrc/applicationRestrictedAuth/createTestUser', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(selected)
-    })
+      body: JSON.stringify({ serviceNamesList: selected })
+    });
     const data = await response.json();
     console.log(data);
     setTestUser(data);
