@@ -4,8 +4,8 @@ import Image from 'next/image';
 export default async function Home() {
 
   return (
-    <div className="flex flex-col justify-start items-center w-full p-3 h-full border-green-700 bg-green-75 border-2 transition-all duration-75 rounded-2xl">
-      <div className="bg-white rounded-xl overflow-y-scroll flex flex-col justify-start items-center">
+    <div className="flex flex-col justify-start items-center p-3 w-[99.75%] ml-[-0.25%] h-[99%] border-green-700 bg-green-75 border-2 transition-all duration-75 rounded-2xl overflow-y-scroll scrollbar-none">
+      <div className="bg-white rounded-xl flex flex-col justify-start items-center ">
         <Image src="/images/rectWithNJTD.png" width="600" height="152" alt="Digital Tax logo." loading="eager" />
         <div className="flex flex-col items-center justify-center p-6">
           <h1 className="text-4xl font-semibold text-center text-stone-700 py-4 px-8 mx-24">Making the transition of Making Tax Digital with HMRC easier with quarterly updates and year-end tax returns.</h1>

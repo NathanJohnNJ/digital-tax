@@ -1,30 +1,36 @@
-# Linking Your HMRC Account
+## Linking Your HMRC Account
 
 Linking your HMRC account allows the app to submit your tax information securely on your behalf.  
 This process uses HMRC’s official OAuth system and is fully authorised.
 
 ---
 
-## Step 1 — Start the Link Process
+### Step 1 — Start the Link Process
 
 Inside the app, go to:
 
-**Settings → HMRC Account → Link Account**
+**Account → Login**
+
+Login to Digital Tax or register for a new account.
+
+The login/registration is handled by Auth0 so your password is never shared with Digital Tax.
+
+Once logged in, you will be redirected back to your account within Digital Tax.
+
+### Step 2 — Start the Link Process
+
+Inside your account, click the '**Link HMRC Account**' button.
 
 You will be redirected to HMRC’s secure login page.
 
----
-
-## Step 2 — Sign In With HMRC
+### Step 3 — Sign In With HMRC
 
 You will sign in using your Government Gateway credentials.
 
 HMRC will ask you to confirm that you want to grant permission to this app.  
 You are not sharing your password — HMRC handles the login.
 
----
-
-## Step 3 — Grant Permissions
+### Step 4 — Grant Permissions
 
 HMRC will ask you to approve access for:
 
@@ -34,18 +40,18 @@ HMRC will ask you to approve access for:
 
 You can revoke this at any time.
 
----
+### Step 5 — Return to the App
 
-## Step 4 — Return to the App
+Once approved, HMRC redirects you back to your account page.
 
-Once approved, HMRC redirects you back to the app.  
 You should now see:
 
-**“HMRC Account Linked Successfully”**
-
+<br></br>
+![Successfully connected with HMRC account](http://localhost:3000/images/connected.png)
+<br></br>
 ---
 
-## Troubleshooting
+### Troubleshooting
 
 - **Incorrect Government Gateway password**  
   HMRC will show an error — simply retry.
@@ -58,7 +64,7 @@ You should now see:
 
 ---
 
-## What You Can Do Next
+### What You Can Do Next
 
 More features are coming soon:
 

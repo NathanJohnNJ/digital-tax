@@ -12,7 +12,7 @@ const allowedTestingEmails = testingAllowedEmailsValue
 export default async function SideNav() {
   const session = await auth0.getSession();
   const userEmail = session?.user?.email?.toLowerCase();
-  const canAccessTesting = Boolean(userEmail && allowedTestingEmails.includes(userEmail));
+  const canAccessTesting = process.env.NODE_ENV !== 'production' && Boolean(userEmail && allowedTestingEmails.includes(userEmail));
 
   return (
     <div className="flex h-full flex-col py-4 w-min bg-linear-40 from-zinc-300 to-zinc-50 to-130%">

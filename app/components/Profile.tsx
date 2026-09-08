@@ -2,7 +2,7 @@
 
 import { useUser } from "@auth0/nextjs-auth0/client";
 import HMRCButton from './auth/hmrcAccountLinkButton';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { buildClientPayload } from '@/client/fraud/clientData';
 import BusinessButton from './ui/account/BusinessButton';
 
@@ -17,7 +17,7 @@ function getInitials(name?: string | null, email?: string | null): string {
   return "U";
 }
 
-export default function Profile(props: HMRCProps) {
+export default function Profile(props: React.ComponentProps<any>) {
   const [ shown, setShown ] = useState(false);
   const [ entered, setEntered ] = useState(false);
   const [ nino, setNino ] = useState("");
@@ -103,8 +103,9 @@ export default function Profile(props: HMRCProps) {
   if (isLoading) return <p className="text-xs text-gray-500">Loading...</p>;
   if (!user) return null;
   return (
-    <>
-      <div className="flex items-center gap-2 text-green-500 text-[13px] font-medium fadeOut">
+    <div className="flex">
+      <div className="flex flex-col justify-center items-center gap-2 bg-gray-100 rounded-4xl m-6 p-4 text-[14px] text-gray-700 max-w-full h-min border-2 border-blue-500 shadow-2xl">
+      <div className="flex items-center justify-center gap-2 text-green-500 text-[13px] font-medium fadeOut">
         <span className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0">
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
             <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -112,12 +113,9 @@ export default function Profile(props: HMRCProps) {
         </span>
         Successfully authenticated
       </div>
-
-      <div className="h-3" />
-      <div className="flex flex-col justify-center items-center gap-2 bg-gray-100 rounded-4xl p-6 text-[14px] text-gray-700 max-w-full border border-gray-500 shadow-2xl">
         <div className="flex items-center">
           <div className="flex items-center">
-            <img width="160" height="160" loading="eager" src={user.picture} className="h-40 w-40 -ml-2" alt="User avatar" />
+            <img width="160" height="160" loading="eager" src={user.picture} className="min-h-40 min-w-40 -ml-2" alt="User avatar" />
           </div>
 
           <div className="flex flex-col gap-0.5 justify-content-between items-center">
@@ -182,8 +180,8 @@ export default function Profile(props: HMRCProps) {
         </div>
       </div>
       { businessList && 
-        <div className="border-2 border-blue-500 rounded-2xl m-6 p-6 shadow-2xl">
-          <h2 className="underline underline-offset-2 text-xl font-bold -mb-2">Businesses</h2>
+        <div className="border-2 border-blue-500 rounded-4xl m-6 p-3 shadow-2xl">
+          <h2 className="text-3xl font-bold ml-2 mt-2 -mb-6">Your Business{businessList.listOfBusinesses.length > 1 ? 'es' : ''}</h2>
           <div className="flex flex-col justify-center items-center my-6 gap-2 rounded-4xl p-6 text-[14px] text-gray-700 max-w-full">
             { businessList.listOfBusinesses.map((business: any, i: number) => {
               return (
@@ -194,6 +192,6 @@ export default function Profile(props: HMRCProps) {
           </div>
         </div>
       }
-    </>
+    </div>
   );
 }

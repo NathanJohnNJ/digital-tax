@@ -4,16 +4,22 @@ import { MDXProvider } from "@mdx-js/react";
 
 const components = {
   h1: (props: any) => (
-    <h1 className="text-6xl font-bold mt-8 mb-4" {...props} />
+    <h1 className="text-6xl font-extrabold mt-8 mb-4" {...props} />
   ),
   h2: (props: any) => (
-    <h2 className="text-3xl font-semibold mt-6 mb-3" {...props} />
+    <h2 className="text-4xl font-bold -mt-4 mb-3 text-center" {...props} />
   ),
   h3: (props: any) => (
     <h3 className="text-2xl font-semibold mt-4 mb-2" {...props} />
   ),
+  main: (props: any) => (
+    <main className="p-6" {...props} />
+  ),
+  div: (props: any) => (
+    <div className="p-6" {...props} />
+  ),
   p: (props: any) => (
-    <p className="leading-relaxed my-4 text-neutral-800" {...props} />
+    <p className="leading-relaxed text-slate-800" {...props} />
   ),
   ul: (props: any) => (
     <ul className="list-disc ml-6 my-4 space-y-2" {...props} />

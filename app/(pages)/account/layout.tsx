@@ -1,6 +1,5 @@
 import TopNav from '../../components/ui/topnav';
 import NavLinks from '../../components/ui/account/navLinks';
-import clsx from 'clsx';
  
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
