@@ -6,9 +6,11 @@ import { usePathname } from "next/navigation";
 const sections = {
   User: [
     { title: "User Documentation", href: "/docs/user"},
-    { title: "Linking HMRC", href: "/docs/user/linking" },
-    { title: "Quarterly Updates", href: "/docs/user/quarterly" },
-    { title: "Tax Returns", href: "/docs/user/tax-return" },
+    { title: "Linking HMRC", href: "/docs/user/linking-hmrc" },
+    { title: "Business Overview", href: "/docs/user/business-overview"},
+    { title: "Income & Expendature", href: "/docs/user/income-and-expendature"},
+    { title: "Quarterly Updates", href: "/docs/user/quarterly-updates" },
+    { title: "Tax Returns", href: "/docs/user/year-end-tax-return" },
     { title: "Troubleshooting", href: "/docs/user/troubleshooting" },
   ],
   Developer: [

@@ -10,12 +10,6 @@ import Link from 'next/link';
 import clsx from 'clsx';
 import { usePathname } from 'next/navigation';
 
-const links = [
-  { name: 'Home', href: '/', icon: HomeIcon },
-  { name: 'Account', href: '/account', icon: UserIcon },
-  { name: 'Documentation', href: '/docs', icon: DocumentIcon },
-];
-
 export default function NavLinks({ canAccessTesting = false }: { canAccessTesting?: boolean }) {
   const pathname = usePathname();
 
@@ -24,7 +18,7 @@ export default function NavLinks({ canAccessTesting = false }: { canAccessTestin
       <div className="flex flex-col gap-y-2">
         <Link key="Home" href="/"
         className={clsx(
-          'flex h-12 grow items-center gap-2 rounded-l-md bg-gray-50 p-3 text-sm font-medium hover:bg-green-50 hover:text-green-700 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
+          'flex self-end w-full h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2 hover:bg-green-50 hover:text-green-700',
           {
             'bg-green-50 text-green-700 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === "/"
           },
@@ -35,7 +29,7 @@ export default function NavLinks({ canAccessTesting = false }: { canAccessTestin
         
         <Link key="Account" href="/account"
           className={clsx(
-          'flex h-12 grow items-center gap-2 rounded-l-md p-3 bg-gray-50 text-sm font-medium hover:bg-sky-50 hover:text-blue-600 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
+          'flex self-end w-full h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2 hover:bg-sky-50 hover:text-blue-600',
           {
             'bg-sky-50 text-blue-600 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname.split("/")[1].includes('account'),
           },
@@ -45,7 +39,7 @@ export default function NavLinks({ canAccessTesting = false }: { canAccessTestin
         </Link>
         <Link key="Documentation" href='/docs'
         className={clsx(
-          'flex h-12 grow items-center gap-2 rounded-l-md p-3 bg-gray-50 text-sm font-medium hover:bg-mauve-100 hover:text-mauve-700 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
+          'flex self-end w-full h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2 hover:bg-mauve-100 hover:text-mauve-700',
           {
             'bg-mauve-100 text-mauve-700 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname.split("/")[1].includes("docs")
           },
@@ -56,7 +50,7 @@ export default function NavLinks({ canAccessTesting = false }: { canAccessTestin
         {canAccessTesting && (
           <Link key="Testing" href="/testing"
             className={clsx(
-            'flex h-12 grow items-center gap-2 rounded-l-md bg-gray-50 p-3 text-sm font-medium hover:bg-amber-50 hover:text-amber-700 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
+            'flex self-end w-full h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2 hover:bg-amber-50 hover:text-amber-700 ',
             {
               'bg-amber-50 text-amber-700 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === '/testing'
             },
@@ -69,7 +63,7 @@ export default function NavLinks({ canAccessTesting = false }: { canAccessTestin
       <div className="flex flex-col gap-y-2">
         <Link key="Cookies" href="/cookies"
         className={clsx(
-          'flex self-end w-full h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium hover:bg-taupe-50 hover:text-taupe-500 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
+          'flex self-end w-full h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2 hover:bg-taupe-50 hover:text-taupe-500',
           {
             'bg-taupe-50 text-taupe-500 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === "/cookies",
           },
@@ -79,7 +73,7 @@ export default function NavLinks({ canAccessTesting = false }: { canAccessTestin
         </Link>
         <Link key="Privacy" href="/privacy"
         className={clsx(
-          'flex self-end w-full h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium hover:bg-neutral-50 hover:text-neutral-500 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
+          'flex self-end w-full h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2 hover:bg-neutral-50 hover:text-neutral-500',
           {
             'bg-neutral-50 text-neutral-500 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === "/privacy",
           },
@@ -89,7 +83,7 @@ export default function NavLinks({ canAccessTesting = false }: { canAccessTestin
         </Link>
         <Link key="Terms" href="/terms"
         className={clsx(
-          'flex self-end h-12 grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium hover:bg-slate-50 hover:text-slate-500 md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2',
+          'flex self-end h-12 w-full grow items-center gap-2 bg-gray-50 rounded-l-md p-3 text-sm font-medium md:flex-none z-50 hover:border-t-2 hover:border-l-2 hover:border-r-0 hover:border-b-2 hover:bg-slate-50 hover:text-slate-500',
           {
             'bg-slate-50 text-slate-500 border-t-2 border-l-2 border-r-0 border-b-2 -mr-0.5': pathname === "/terms",
           },

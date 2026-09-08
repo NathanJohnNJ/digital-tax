@@ -103,7 +103,7 @@ export default function Cookies(){
           <p className="mt-3">For more information regarding the cookies we use, please see our <Link href="https://dt.njtd.xyz/cookies" className="cursor-pointer font-semibold text-slate-800 hover:underline hover:decoration-double hover:font-bold hover:text-neutral-600">Cookie Policy</Link>.</p>
         </div>
         :
-        <button className="absolute bottom-8 right-5 flex items-center justify-center w-fit h-fit bg-linear-60 from-slate-500/90 to-slate-400/90 transition-all duration-75 p-2 rounded-full cursor-pointer" onClick={()=>{setVisible(true)}}><Cookie /></button>
+        <button className="absolute bottom-10 right-15 flex items-center justify-center w-fit h-fit bg-linear-60 from-slate-500/90 to-slate-400/90 transition-all duration-75 p-2 rounded-full cursor-pointer" onClick={()=>{setVisible(true)}}><Cookie /></button>
       }
     </>
   )
