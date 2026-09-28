@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { buildClientPayload } from '@/client/fraud/clientData';
 import type { QuarterlyObligations } from '@/lib/types/hmrc';
 import { formatDisplayDate } from '@/app/api/utils/ukTaxYear';
@@ -14,11 +13,7 @@ type QuarterlyProps = {
 
 export default function Quarterly(props: QuarterlyProps){
   const { businessId, nino, year } = props;
-  const searchParams = useSearchParams();
   const [ quarterlyObligations, setQuarterlyObligations ] = useState<QuarterlyObligations>();
-  const quarterlyUpdatesHref = searchParams.toString()
-    ? `/account/quarterly?${searchParams.toString()}`
-    : '/account/quarterly';
 
   useEffect(() => {
     setQuarterlyObligations(undefined);
@@ -67,7 +62,7 @@ export default function Quarterly(props: QuarterlyProps){
                 </p>
               ) : obligation.status === 'open' ? (
                 <Link href={{
-                  pathname: quarterlyUpdatesHref,
+                  pathname: '/account/quarterly',
                   query: {
                     nino: nino,
                     businessId: businessId,

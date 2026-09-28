@@ -1,26 +1,41 @@
-## Development Roadmap
+## Development Status
 
-This project is under active development.
+<br></br>
 
----
+<center>This page records the current state visible in the repository. It is an implementation snapshot, not a release schedule or a promise that sandbox features are ready for live tax filing.</center>
 
-### Completed
-
-- HMRC OAuth linking  
-- Basic fraud prevention header generation  
+<br></br>
 
 ---
 
-### In Progress
+### Implemented against the sandbox
 
-- Quarterly update submission  
-- Tax return submission  
-- Validation engine  
+- HMRC OAuth authorisation and token handling.
+- Business list and detail requests, plus quarterly and year-end obligation requests.
+- A quarterly update form and server route for period and cumulative submissions.
+- Retrieval and saving of the self-employment annual summary.
+- Quarterly update history retrieval and a fraud-prevention header validation route.
+- An income and expenditure calculator in the account interface.
+
+These flows use HMRC's test endpoints. Their presence does not mean that a live submission, complete tax return, or production-ready integration is available.
+
+<br></br>
 
 ---
 
-### Planned
+### Work required before live use
 
-- Full submission history  
-- Error reporting  
-- Developer SDK  
+- Configure and verify production HMRC credentials, redirect URIs, scopes, and API endpoints.
+- Complete security review of OAuth state/CSRF protection, token lifecycle, cookie settings, and secret management.
+- Review fraud-prevention data collection, user identification, proxy/IP handling, and HMRC validation feedback.
+- Complete end-to-end testing for success, validation failures, retries, expired tokens, and upstream outages.
+- Complete the full year-end tax workflow, including any remaining income sources, final calculation, and declaration required by HMRC.
+- Provide clear user-facing guidance and support for a production release.
+
+<br></br>
+
+---
+
+### Keep this page current
+
+Update this status when code or HMRC requirements change. Link each future milestone to an issue or release decision before treating it as committed scope.

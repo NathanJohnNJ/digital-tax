@@ -4,7 +4,7 @@ import HMRCOAuth from '@/docs/dev/hmrc-oauth.mdx';
 
 export default function Page() {
   return (
-    <article className="prose prose-neutral">
+    <article className="prose prose-neutral mx-auto w-full max-w-3xl px-4 py-10">
       <HMRCOAuth />
     </article>
   )

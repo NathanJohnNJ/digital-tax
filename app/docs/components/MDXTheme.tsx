@@ -4,7 +4,7 @@ import { MDXProvider } from "@mdx-js/react";
 
 const components = {
   h1: (props: any) => (
-    <h1 className="text-6xl font-extrabold mt-8 mb-4" {...props} />
+    <h1 className="text-6xl font-extrabold mt-8 mb-4 text-center" {...props} />
   ),
   h2: (props: any) => (
     <h2 className="text-4xl font-bold -mt-4 mb-3 text-center" {...props} />
@@ -13,10 +13,10 @@ const components = {
     <h3 className="text-2xl font-semibold mt-4 mb-2" {...props} />
   ),
   main: (props: any) => (
-    <main className="p-6" {...props} />
+    <main className="p-6 w-full" {...props} />
   ),
   div: (props: any) => (
-    <div className="p-6" {...props} />
+    <div className="p-6 w-full" {...props} />
   ),
   p: (props: any) => (
     <p className="leading-relaxed text-slate-800" {...props} />
@@ -26,6 +26,9 @@ const components = {
   ),
   ol: (props: any) => (
     <ol className="list-decimal ml-6 my-4 space-y-2" {...props} />
+  ),
+  li: (props: any) => (
+    <li className="" {...props} />
   ),
   code: (props: any) => (
     <code className="bg-neutral-100 px-2 py-1 rounded text-sm" {...props} />
@@ -42,6 +45,9 @@ const components = {
   td: (props: any) => (
     <td className="border px-3 py-2" {...props} />
   ),
+  a: (props: any) => (
+    <a className="hover:text-lg hover:font-semibold transition-all duration-100" {...props} />
+  )
 };
 
 export default function MDXTheme({ children }: { children: React.ReactNode }) {

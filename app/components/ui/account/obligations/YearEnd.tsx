@@ -1,18 +1,13 @@
 'use client';
 import { useState, useEffect } from "react";
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { buildClientPayload } from '@/client/fraud/clientData';
 import type { Obligations } from '@/lib/types/hmrc';
 import { formatDisplayDate } from '@/app/api/utils/ukTaxYear';
 
 export default function YearEnd(props: any){
   const { businessId, nino, year } = props;
-  const searchParams = useSearchParams();
   const [ yearEndObligations, setYearEndObligations ] = useState<Obligations>();
-  const yearEndReturnHref = searchParams.toString()
-    ? `/account/taxReturn?${searchParams.toString()}`
-    : '/account/taxReturn';
 
 useEffect(()=>{
   setYearEndObligations(undefined);
@@ -61,7 +56,7 @@ useEffect(()=>{
                 </p>
               ) : obligation.status === 'open' ? (
                 <Link href={{
-                  pathname: yearEndReturnHref,
+                  pathname: '/account/taxReturn',
                   query: {
                     nino,
                     businessId,

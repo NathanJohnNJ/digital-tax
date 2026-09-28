@@ -1,11 +1,37 @@
-## Submitting Quarterly Updates
+## Quarterly Updates
 
-This feature is coming soon.
+<br></br>
 
-Once available, you will be able to:
+<center>The quarterly update page lets you enter income and expense figures for an obligation and send them to HMRC. The current app is connected to HMRC's sandbox, so submissions are tests and do not file figures to a live HMRC account.</center>
 
-- Upload your income and expense data
-- Validate your records before submission
-- Send quarterly updates directly to HMRC
+<br></br>
 
-Check back soon for full instructions.
+---
+
+### Open an update
+
+From the selected business's **Obligations** list, choose an open quarterly obligation. The app opens the update form with the business and reporting period supplied in the link. Check both before entering figures.
+
+If the form says that the business or period is missing or invalid, return to the obligations list and open the update from there.
+
+<br></br>
+
+---
+
+### Enter income and expenses
+
+Enter turnover, other income, and tax taken off trading income. For expenses, choose either **Consolidated expenses** or **Itemised expenses** and enter the relevant amounts. The form also has fields for disallowable expenses when using itemised expenses.
+
+The form requires non-negative amounts with up to two decimal places. Consolidated expenses require you to confirm eligibility; check current HMRC rules and your records before making that confirmation. The summary shows total income, total expenses, and profit before tax.
+
+For tax years beginning in 2025 or later, the current implementation submits cumulative figures from 6 April of that tax year through the selected period end. For earlier tax years, it submits the selected reporting period. Review the period displayed by the form before submitting.
+
+<br></br>
+
+---
+
+### Submit and check the result
+
+Select **Submit update to HMRC**. The app validates the form and sends the request through its server-side HMRC integration. A success message means HMRC's sandbox accepted the request; it is not confirmation of a live tax filing.
+
+If the request fails, the form displays an error returned by the app or HMRC. Check the figures, business, period, and HMRC sandbox connection before retrying. Do not submit real tax information to this development app.
