@@ -1,5 +1,6 @@
 'use client';
-
+import { useUser } from '@auth0/nextjs-auth0/client';
+import LogoutButton from '../../../components/auth/LogoutButton';
 import {
   HomeIcon,
   DocumentCurrencyPoundIcon,
@@ -20,6 +21,7 @@ const links = [
 ];
 
 export default function NavLinks() {
+  const { user, isLoading } = useUser();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryString = searchParams.toString();
@@ -45,6 +47,13 @@ export default function NavLinks() {
           </Link>
         );
       })}
+      {user &&
+      <div className="relative w-full h-full">
+      <div className="absolute right-3.75 ">
+        <LogoutButton style={{borderBottomRightRadius: 0}} />
+        </div>
+      </div>
+      }
     </>
   );
 }

@@ -78,7 +78,7 @@ export default function BusinessDetails({ businessId, nino }: BusinessDetailsPro
   ].filter(Boolean);
 
   return (
-    <div className="border-2 border-blue-400 shadow-md rounded-2xl p-4 mt-6 flex flex-col justify-self-start w-7/8">
+    <div className="border-2 border-blue-400 shadow-2xl bg-linear-to-tr from-gray-200 to-40% to-gray-50 rounded-2xl p-4 mt-6 flex flex-col justify-self-start w-7/8">
       <div className="flex items-center justify-between gap-4 mb-2">
         <h3 className="font-extrabold text-2xl text-center flex-1">Business Details</h3>
         <button
@@ -114,9 +114,9 @@ export default function BusinessDetails({ businessId, nino }: BusinessDetailsPro
 
       {address.length > 0 && (
         <div className="mt-4 border-t border-sky-100 pt-4">
-          <h4 className="text-2xl font-bold mb-2">Business Address</h4>
-          <address className="not-italic space-y-1">
-            {address.map((line, index) => <p key={`${line}-${index}`}>{line}</p>)}
+          <h4 className="text-xl font-bold mb-2">Business Address</h4>
+          <address className="not-italic space-y-1 w-9/14">
+            {address.map((line, index) => <p className="text-gray-700 text-right" key={`${line}-${index}`}>{line}</p>)}
           </address>
         </div>
       )}

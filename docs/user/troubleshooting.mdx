@@ -1,24 +1,42 @@
 ## Troubleshooting
 
-If you run into issues while using the app, here are common fixes.
+<br></br>
+
+<center>Use these checks for common account, business, and submission problems. This app is in sandbox development, so its HMRC responses and test data are separate from your live tax account.</center>
+
+<br></br>
 
 ---
 
-### HMRC Account Not Linking
+### HMRC account will not link
 
-- Check your Government Gateway password  
-- Ensure your HMRC account has MTD enabled  
-- Try restarting the linking process
+- Confirm that you are using the HMRC sandbox sign-in and test user configured for this app, rather than expecting a live HMRC connection.
+- Check that the app's redirect URL and HMRC sandbox application settings match. These settings are maintained by the app operator.
+- If HMRC returns an authorisation error or the session expires, start the linking flow again and grant the requested access.
+- Do not send your HMRC password, access token, or National Insurance number in a support request.
 
----
-
-### Submission Errors
-
-These features are not yet available.  
-Full troubleshooting steps will be added once submissions are implemented.
+<br></br>
 
 ---
 
-### Contact Support
+### A business or obligation is missing
 
-If you need help, you can reach out through the app’s support page.
+Check that the correct business is selected and that its details and obligations are available in the sandbox test account. Return to the business overview and refresh the relevant information. An update or annual-summary link must include a valid business and reporting period; open it from the obligations list if those details are missing.
+
+<br></br>
+
+---
+
+### A submission fails
+
+Read the error shown by the form and verify the selected business, tax year, reporting dates, and amounts. Amounts must be non-negative and use no more than two decimal places. For consolidated expenses, confirm eligibility using current HMRC guidance.
+
+Sandbox data may not include the business, period, or test scenario you expect. A sandbox success is not a live filing, and this development app must not be used to submit real tax information.
+
+<br></br>
+
+---
+
+### Contact
+
+For app support, email [dt@njtd.xyz](mailto:dt@njtd.xyz). Include the page, a description of what happened, and any non-sensitive error text. Do not include passwords, tokens, or personal tax identifiers.

@@ -1,14 +1,57 @@
-## API Design
+## HMRC API Design
 
-This section outlines the planned API routes.
+<br></br>
+
+<center>The browser talks to same-origin Next.js route handlers. Those handlers add the HMRC access token and fraud-prevention headers, then call the HMRC sandbox APIs. The routes below describe the current implementation, not a public or stable external API.</center>
+
+<br></br>
 
 ---
 
-### Planned Routes
+### OAuth routes
 
-- `POST /api/hmrc/link`  
-- `POST /api/hmrc/submit-quarterly-update`  
-- `POST /api/hmrc/submit-tax-return`  
-- `GET /api/hmrc/status`
+- `GET /api/hmrc/userRestrictedAuth/authorise` redirects the user to the HMRC sandbox authorisation page with the configured self-assessment read and write scopes.
+- `GET /api/hmrc/userRestrictedAuth/callback` handles the authorisation response, exchanges the code for tokens, sets token cookies, and redirects to the account page.
+- `GET /api/hmrc/userRestrictedAuth/refresh` exchanges a refresh token for new tokens.
 
-These routes will be documented fully once implemented.
+Application sign-in uses a separate Auth0 integration; it is not the HMRC OAuth flow.
+
+<br></br>
+
+---
+
+### Business and obligation routes
+
+These are POST routes that receive request data from the app and call corresponding HMRC sandbox resources:
+
+- `/api/hmrc/userRestrictedAuth/businessList`
+- `/api/hmrc/userRestrictedAuth/businessDetails`
+- `/api/hmrc/userRestrictedAuth/obligations/quarterly`
+- `/api/hmrc/userRestrictedAuth/obligations/yearEnd`
+- `/api/hmrc/userRestrictedAuth/quarterlyUpdateHistory`
+- `/api/hmrc/userRestrictedAuth/listSelfAssessmentTaxCalculations`
+
+The route handlers validate some identifiers, attach authentication and fraud-prevention headers, and return parsed HMRC responses. Their upstream HMRC methods, paths, and API versions are defined in the individual route files.
+
+<br></br>
+
+---
+
+### Submission routes
+
+- `POST /api/hmrc/userRestrictedAuth/submitQuarterlyUpdate` validates dates and income/expense fields, then submits either a period update or a cumulative update according to the tax year.
+- `POST /api/hmrc/userRestrictedAuth/annualSubmission` accepts `action: "retrieve"` or `action: "submit"` for a self-employment annual summary.
+
+Both routes call HMRC's test API. The annual summary route does not implement a complete Self Assessment return or final declaration.
+
+<br></br>
+
+---
+
+### Test and error behavior
+
+- `POST /api/hmrc/applicationRestrictedAuth/createTestUser` requests an HMRC sandbox test user.
+- `POST /api/hmrc/fraud/test` forwards fraud-prevention headers to HMRC's validation endpoint.
+- HMRC errors are returned with an error message and, where available, the upstream status. Network failures are handled by the route, but response shapes are not yet a versioned public contract.
+
+`app/api/hmrc/userRestrictedAuth/helper.ts` is shared route code, not an endpoint: only files named `route.ts` expose App Router routes.

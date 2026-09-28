@@ -104,8 +104,10 @@ export default function Profile(props: React.ComponentProps<any>) {
   if (!user) return null;
   return (
     <div className="flex">
-      <div className="flex flex-col justify-center items-center gap-2 bg-gray-100 rounded-4xl m-6 p-4 text-[14px] text-gray-700 max-w-full h-min border-2 border-blue-500 shadow-2xl">
-      <div className="flex items-center justify-center gap-2 text-green-500 text-[13px] font-medium fadeOut">
+      <div className="flex flex-col justify-center items-center gap-2 bg-linear-to-tr from-gray-200 to-40% to-gray-50 rounded-4xl m-6 p-4 text-[14px] text-gray-700 max-w-full h-min border-2 border-blue-500 shadow-2xl">
+        <div className="flex items-center justify-between w-full h-min">
+          <h2 className="text-3xl font-bold self-start ml-4 mb-2 text-black">Your Details</h2>
+      <div className="flex items-center justify-center gap-2 text-green-500 text-[13px] font-medium fadeOut mr-4">
         <span className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0">
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
             <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -113,6 +115,7 @@ export default function Profile(props: React.ComponentProps<any>) {
         </span>
         Successfully authenticated
       </div>
+        </div>
         <div className="flex items-center">
           <div className="flex items-center">
             <img width="160" height="160" loading="eager" src={user.picture} className="min-h-40 min-w-40 -ml-2" alt="User avatar" />
@@ -153,7 +156,7 @@ export default function Profile(props: React.ComponentProps<any>) {
               connected &&
               <div className=" relative flex items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-grey-100 border border-gray-500 rounded-full py-1.5 pr-1.5 pl-4 text-[14px] ml-2 text-gray-700 w-full">
                 <span className="truncate font-semibold" title="National Insurance number">N.I. Number</span>
-                <input id="nino" name="nino" className="bg-white/90 rounded-full pl-3 font-light" disabled={entered} placeholder="AA000000A" value={nino} onChange={e=>setNino(e.target.value)} />
+                <input id="nino" name="nino" className="bg-white/90 rounded-lg pl-3 font-light" disabled={entered} placeholder="AA000000A" value={nino} onChange={e=>setNino(e.target.value)} />
                 <button
                   className="w-7 h-7 bg-gray-500 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0"
                   onClick={() => NIHandler(nino, user?.sub)}
@@ -180,9 +183,9 @@ export default function Profile(props: React.ComponentProps<any>) {
         </div>
       </div>
       { businessList && 
-        <div className="border-2 border-blue-500 rounded-4xl m-6 p-3 shadow-2xl">
+        <div className="border-2 border-blue-500 rounded-4xl m-6 p-3 pb-0 shadow-2xl h-min bg-linear-to-tr from-gray-200 to-40% to-gray-50 ">
           <h2 className="text-3xl font-bold ml-2 mt-2 -mb-6">Your Business{businessList.listOfBusinesses.length > 1 ? 'es' : ''}</h2>
-          <div className="flex flex-col justify-center items-center my-6 gap-2 rounded-4xl p-6 text-[14px] text-gray-700 max-w-full">
+          <div className="flex flex-col justify-center items-center mt-6 rounded-4xl p-5 text-[14px] text-gray-700 max-w-full">
             { businessList.listOfBusinesses.map((business: any, i: number) => {
               return (
                 <BusinessButton business={business} key={i} nino={nino} />

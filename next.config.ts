@@ -7,7 +7,8 @@ const nextConfig: NextConfig = {
       {hostname: "avatars.githubusercontent.com"}
     ]
   },
-  pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx']
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
+  allowedDevOrigins: ['192.168.0.123']
 };
 
 const withMDX = createMDX({

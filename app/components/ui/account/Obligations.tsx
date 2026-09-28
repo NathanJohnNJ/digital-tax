@@ -15,7 +15,7 @@ export default function Obligations(props: any){
   }
   
   return (
-    <div className="border-2 border-blue-400 shadow-md rounded-2xl p-4 mt-6 flex flex-col justify-self-start">
+    <div className="border-2 border-blue-400 shadow-2xl rounded-2xl p-4 mt-6 flex flex-col justify-self-start bg-linear-to-tr from-gray-200 to-40% to-gray-50">
       <h3 className="font-extrabold text-2xl text-center mb-2">Obligations</h3>
       <label className="flex items-center" htmlFor="taxYear">
         Please select a tax year to see your obligations:

@@ -1,21 +1,37 @@
 ## HMRC OAuth Flow
 
-The app uses HMRC’s OAuth 2.0 flow to authenticate users.
+<br></br>
+
+<center>The app uses HMRC OAuth 2.0 for delegated access to self-assessment resources. This is separate from the Auth0 sign-in used to access Digital Tax itself.</center>
+
+<br></br>
 
 ---
 
-### Steps
+### Authorisation and callback
 
-1. Redirect user to HMRC login  
-2. User signs in with Government Gateway  
-3. HMRC returns an authorization code  
-4. App exchanges the code for an access token  
-5. Token is stored securely  
-6. Token is refreshed automatically when needed
+1. The browser opens `GET /api/hmrc/userRestrictedAuth/authorise`.
+2. The route redirects to the HMRC sandbox authorisation host with the app's client ID, redirect URI, and `read:self-assessment write:self-assessment` scopes.
+3. After consent, HMRC redirects to `GET /api/hmrc/userRestrictedAuth/callback` with an authorisation code, or an error.
+4. The server action exchanges the code at the configured HMRC test API token endpoint using the client credentials and redirect URI.
+5. The callback stores access and refresh tokens in HTTP-only cookies and redirects the user to the account page.
+
+<br></br>
 
 ---
 
-### Sandbox vs Production
+### Token handling
 
-HMRC provides a sandbox environment for testing.  
-More details will be added once full submission features are implemented.
+The initial access and refresh tokens are stored in HTTP-only cookies; the browser cannot read their values through JavaScript. The refresh handler is `GET /api/hmrc/userRestrictedAuth/refresh` and uses the refresh token to request replacement tokens.
+
+Do not assume that every HMRC request automatically refreshes an expired token. Review the caller and cookie lifecycle when changing token handling. The current callback and refresh implementation should also be reviewed for consistent `secure`, `sameSite`, path, expiry, and error behavior before production use.
+
+<br></br>
+
+---
+
+### Sandbox scope and production readiness
+
+`config/hmrc.ts` points the app to HMRC's test API and test authorisation hosts. The currently requested scopes are self-assessment read and write; the code does not request MTD VAT scopes. Use sandbox test users and data while developing.
+
+The current flow is not a production-ready security design. Before enabling live credentials, implement and verify the appropriate OAuth state/CSRF protections and review redirect URI handling, secret storage, token revocation and expiry, cookie attributes, consent copy, and the complete live API flow. Never use sandbox acceptance as evidence that a live filing has been made.

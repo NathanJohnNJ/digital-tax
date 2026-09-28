@@ -1,3 +1,3 @@
 #!/bin/bash
 
-git add .; git commit -m "$1"; git push origin macbook-updates
+git add .; git commit -m "$1"; git push origin njcopilot-updates

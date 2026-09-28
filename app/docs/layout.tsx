@@ -16,7 +16,7 @@ export default function DocsLayout({
           <div className="relative w-full overflow-visible">
             <Search />
           </div>
-          <div className="bg-mauve-50 shadow-xl rounded-2xl w-full h-full overflow-y-auto relative">
+          <div className="bg-mauve-50 shadow-xl rounded-2xl w-full h-full overflow-y-auto relative scrollbar-none">
             <div className="absolute left-3 top-2">
               <Breadcrumbs />
             </div>

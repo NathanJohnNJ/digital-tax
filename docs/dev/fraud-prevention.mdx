@@ -1,24 +1,51 @@
 ## Fraud Prevention Headers
 
-HMRC requires specific headers for every API call.
+<br></br>
 
-This app generates:
+<center>HMRC fraud-prevention headers are assembled for outbound requests by `buildFraudPreventionHeaders`. Browser-derived values are collected separately and passed to the server with the app's request.</center>
 
-- Gov-Client-Connection-Method
-- Gov-Client-Browser-JS-User-Agent
-- Gov-Client-Device-ID
-- Gov-Client-Multi-Factor
-- Gov-Client-Public-IP  
-- Gov-Client-Public-IP-Timestamp
-- Gov-Client-Public-Port
-- Gov-Client-Screens 
-- Gov-Client-Timezone 
-- Gov-Client-User-IDs 
-- Gov-Client-Window-Size 
-- Gov-Vendor-Forwarded
-- Gov-Vendor-License-IDs
-- Gov-Vendor-Product-Name
-- Gov-Vendor-Public-IP
-- Gov-Vendor-Version
+<br></br>
 
-More headers will be added as functionality expands.
+---
+
+### Client headers
+
+`client/fraud/clientData.ts` currently builds values for:
+
+- `Gov-Client-Connection-Method`
+- `Gov-Client-Browser-JS-User-Agent`
+- `Gov-Client-Device-ID`
+- `Gov-Client-Multi-Factor`
+- `Gov-Client-Public-IP` and `Gov-Client-Public-IP-Timestamp`
+- `Gov-Client-Public-Port`
+- `Gov-Client-Screens`
+- `Gov-Client-Timezone`
+- `Gov-Client-User-IDs`
+- `Gov-Client-Window-Size`
+
+The browser helper obtains screen, window, timezone, and user-agent details; it stores a device ID in local storage and requests client IP data from an external service. Some values can be empty or unavailable, so the generated header names alone do not prove that the values meet HMRC's current requirements.
+
+<br></br>
+
+---
+
+### Vendor headers
+
+The server helper adds:
+
+- `Gov-Vendor-Forwarded`, built from the client IP and configured proxy/server IPs.
+- `Gov-Vendor-License-IDs`, built from the configured application name and licence key.
+- `Gov-Vendor-Product-Name` and `Gov-Vendor-Version`, built from the configured application name.
+- `Gov-Vendor-Public-IP`, looked up by the server through an external IP service.
+
+Set and verify the related environment variables and proxy chain for the deployment. Do not infer the true network path from defaults or development values.
+
+<br></br>
+
+---
+
+### Validation and safeguards
+
+`POST /api/hmrc/fraud/test` sends the generated headers to HMRC's sandbox fraud-prevention validation endpoint. Use its feedback during integration, but treat it as a test of the submitted request, not a general compliance certification.
+
+Before production, review the current HMRC fraud-prevention specification and each data source. In particular, replace the fixed user ID currently present in the browser helper with an appropriate per-user value, review IP collection and proxy trust, and ensure the required client information is collected accurately and transparently. Do not log or expose access tokens or unnecessary personal data.

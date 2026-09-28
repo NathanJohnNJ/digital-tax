@@ -1,27 +1,41 @@
 ## Architecture Overview
 
-This document explains how the app is structured and how HMRC integration works.
+<br></br>
+
+<center>Digital Tax is a Next.js App Router application. The browser renders the account and documentation pages; server-side route handlers manage the HMRC sandbox requests and keep OAuth client credentials out of browser code.</center>
+
+<br></br>
 
 ---
 
-### High-Level Structure
+### Main components
 
-- **Next.js App Router** for UI and API routes  
-- **HMRC OAuth client** for authentication  
-- **Fraud prevention header builder**  
-- **Planned submission modules** for quarterly updates and tax returns  
+- `app/(pages)/account` contains the account interface, including business details, obligations, the income calculator, quarterly update form, and year-end summary.
+- `app/api/hmrc/userRestrictedAuth` contains server routes for authorisation, business data, obligations, update history, and submissions.
+- `app/actions` contains server actions used to exchange an authorisation code for an HMRC token.
+- `client/fraud` collects browser-side client information; `app/api/utils` builds HMRC fraud-prevention headers for outbound requests.
+- `config/hmrc.ts` defines HMRC sandbox endpoints. `lib` contains shared authentication and database code.
+- `docs/user` and `docs/dev` contain the MDX source for the documentation pages.
+
+<br></br>
 
 ---
 
-### Folder Layout
+### Request and data flow
 
-/app
+1. A user signs in to the application and separately authorises access through HMRC OAuth.
+2. The browser calls a same-origin Next.js route with the requested business operation and the client data needed for fraud-prevention headers.
+3. The server route validates applicable input, reads the HMRC access token from an HTTP-only cookie, builds request headers, and calls the HMRC test API.
+4. The route returns the HMRC result or an error to the browser for display.
 
-/lib/hmrc
+The quarterly and annual forms submit to HMRC's sandbox; the income calculator is local page state and is not connected to those forms. A PostgreSQL connection pool is configured in `lib/db.ts`, but these form flows send their data to HMRC's test API rather than saving calculator or form values in that database.
 
-/components
+<br></br>
 
-/docs
+---
 
+### Environment and deployment boundary
 
-More details will be added as the project grows.
+The current HMRC configuration points to test authorization and API hosts. Sandbox success is not a live submission. Client credentials, redirect URI, database connection string, and vendor-header settings are provided through environment variables; do not commit their values.
+
+Before any production use, review token lifecycle and cookie settings, OAuth state/CSRF protection, client-data collection and identifiers, proxy/IP configuration, error handling, and the complete live HMRC API workflow. The current code and sandbox configuration are not a production-readiness claim.
