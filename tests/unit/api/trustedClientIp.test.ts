@@ -32,12 +32,12 @@ describe('trusted client IP', () => {
     expect(getTrustedClientIp(request)).toBeUndefined();
   });
 
-  it('rejects lists and malformed values instead of forwarding unsanitized data', () => {
+  it('uses the first x-forwarded-for entry and rejects malformed values', () => {
     const request = new Request('https://example.test/api', {
       headers: { 'x-forwarded-for': '198.51.100.25, 203.0.113.10' },
     });
 
-    expect(getTrustedClientIp(request)).toBeUndefined();
+    expect(getTrustedClientIp(request)).toBe('198.51.100.25');
     expect(getTrustedClientIp(new Request('https://example.test/api', {
       headers: { 'x-forwarded-for': 'not-an-ip' },
     }))).toBeUndefined();

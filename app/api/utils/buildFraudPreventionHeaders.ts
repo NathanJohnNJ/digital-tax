@@ -8,13 +8,24 @@ export type FraudClientData = any;
 
 export async function buildFraudPreventionHeaders(client: FraudClientData, request: Request) {
   async function getPublicIP(){
-    const { ip } = await fetch("https://api.ipify.org?format=json").then(r => r.json());
-    return ip;
+    try {
+      const response = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout(3000) });
+      const { ip } = await response.json();
+      return ip as string;
+    } catch (error) {
+      console.error('Unable to resolve vendor public IP', error instanceof Error ? error.name : error);
+      return process.env.SERVER_PUBLIC_IP ?? "";
+    }
   }
 
   const clientPublicIP = getTrustedClientIp(request);
   if (!clientPublicIP && process.env.NODE_ENV === 'production') {
-    console.error('Unable to resolve trusted client IP; omitting HMRC client IP headers');
+    console.error('Unable to resolve trusted client IP; omitting HMRC client IP headers', {
+      hasXRealIp: request.headers.has('x-real-ip'),
+      hasXVercelForwardedFor: request.headers.has('x-vercel-forwarded-for'),
+      hasXForwardedFor: request.headers.has('x-forwarded-for'),
+      onVercel: process.env.VERCEL === '1',
+    });
   }
 
   return {
