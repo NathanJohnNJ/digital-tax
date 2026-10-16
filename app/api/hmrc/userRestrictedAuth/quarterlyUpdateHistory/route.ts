@@ -18,6 +18,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isObligationGroup(
+  value: unknown,
+): value is Record<string, unknown> & { obligationDetails: Record<string, unknown>[] } {
+  return isRecord(value)
+    && Array.isArray(value.obligationDetails)
+    && value.obligationDetails.every(isRecord);
+}
+
 async function readJson(response: Response): Promise<unknown> {
   const text = await response.text();
   if (!text) return undefined;
@@ -33,18 +41,42 @@ function messageFrom(body: unknown) {
   return 'HMRC quarterly update history request failed';
 }
 
-function periodDatesFromId(periodId?: string) {
-  const match = periodId && /^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/.exec(periodId);
-  return match ? { periodStartDate: match[1], periodEndDate: match[2] } : undefined;
+function codeFrom(body: unknown) {
+  return isRecord(body) && typeof body.code === 'string' ? body.code : undefined;
 }
 
-function listObligations(body: unknown) {
-  if (!isRecord(body) || !Array.isArray(body.obligations)) return [];
-  return body.obligations.flatMap((item) => {
-    if (!isRecord(item)) return [];
-    if (Array.isArray(item.obligationDetails)) return item.obligationDetails.filter(isRecord);
-    return [item];
+function isNotFound(body: unknown) {
+  return codeFrom(body) === 'MATCHING_RESOURCE_NOT_FOUND';
+}
+
+function isNoObligationsFound(body: unknown) {
+  return codeFrom(body) === 'NO_OBLIGATIONS_FOUND';
+}
+
+class HmrcResponseError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: unknown,
+  ) {
+    super(messageFrom(body));
+  }
+}
+
+function hmrcErrorResponse(error: HmrcResponseError) {
+  console.error('HMRC quarterly update history request failed', {
+    status: error.status,
+    code: codeFrom(error.body),
   });
+  return NextResponse.json(
+    { error: error.message, status: error.status, details: error.body },
+    { status: error.status },
+  );
+}
+
+function listObligations(body: unknown): Record<string, unknown>[] | undefined {
+  if (!isRecord(body) || !Array.isArray(body.obligations)) return undefined;
+  if (!body.obligations.every(isObligationGroup)) return undefined;
+  return body.obligations.flatMap((item) => item.obligationDetails);
 }
 
 function receivedDateForPeriod(obligations: Record<string, unknown>[], periodEndDate?: string) {
@@ -103,7 +135,7 @@ export async function POST(request: NextRequest) {
   if (!token) return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
 
   try {
-    const fraudHeaders = await buildFraudPreventionHeaders(clientData);
+    const fraudHeaders = await buildFraudPreventionHeaders(clientData, request);
     const apiHeaders = {
       Authorization: `Bearer ${token}`,
       ...fraudHeaders,
@@ -117,8 +149,17 @@ export async function POST(request: NextRequest) {
     });
     const summaryBody = await readJson(summaryResponse);
 
-    if (!summaryResponse.ok && summaryResponse.status !== 404) {
-      return NextResponse.json({ error: messageFrom(summaryBody) }, { status: summaryResponse.status });
+    if (!summaryResponse.ok) {
+      if (summaryResponse.status === 404 && isNotFound(summaryBody)) {
+        return NextResponse.json({ updates: [] });
+      }
+      return hmrcErrorResponse(new HmrcResponseError(summaryResponse.status, summaryBody));
+    }
+    if (!isRecord(summaryBody)) {
+      console.error('HMRC quarterly update history returned an invalid summary response', {
+        status: summaryResponse.status,
+      });
+      return NextResponse.json({ error: 'HMRC returned an invalid submitted-updates response' }, { status: 502 });
     }
 
     const obligationUrl = new URL(`${HMRC_CONFIG.testApiUrl}/obligations/details/${nino}/income-and-expenditure`);
@@ -130,12 +171,25 @@ export async function POST(request: NextRequest) {
       headers: { Accept: 'application/vnd.hmrc.3.0+json', ...apiHeaders },
     });
     const obligationsBody = await readJson(obligationsResponse);
-    const obligations = obligationsResponse.ok ? listObligations(obligationsBody) : [];
+    let obligations: Record<string, unknown>[];
+    if (!obligationsResponse.ok) {
+      if (obligationsResponse.status === 404 && isNoObligationsFound(obligationsBody)) {
+        obligations = [];
+      } else {
+        return hmrcErrorResponse(new HmrcResponseError(obligationsResponse.status, obligationsBody));
+      }
+    } else {
+      const parsedObligations = listObligations(obligationsBody);
+      if (!parsedObligations) {
+        console.error('HMRC obligations request returned an invalid response', {
+          status: obligationsResponse.status,
+        });
+        return NextResponse.json({ error: 'HMRC returned an invalid obligations response' }, { status: 502 });
+      }
+      obligations = parsedObligations;
+    }
 
     if (isCumulative) {
-      if (!summaryResponse.ok || !isRecord(summaryBody)) {
-        return NextResponse.json({ updates: [] });
-      }
       const period = summaryBody as HmrcPeriod;
       const end = period.periodDates?.periodEndDate;
       return NextResponse.json({
@@ -147,24 +201,34 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const periodList = isRecord(summaryBody) && Array.isArray(summaryBody.periods)
-      ? summaryBody.periods.filter(isRecord) as HmrcPeriod[]
-      : [];
+    if (!Array.isArray(summaryBody.periods) || !summaryBody.periods.every(isRecord)) {
+      console.error('HMRC period summary list returned an invalid response');
+      return NextResponse.json({ error: 'HMRC returned an invalid submitted-updates response' }, { status: 502 });
+    }
+    const periodList = summaryBody.periods as HmrcPeriod[];
     const details = await Promise.all(periodList.map(async (period) => {
       if (period.periodDates && period.periodIncome && period.periodExpenses) return period;
-      const dates = period.periodDates ?? periodDatesFromId(period.periodId);
-      if (!period.periodId) return { ...period, periodDates: dates };
+      if (!period.periodId) {
+        throw new HmrcResponseError(502, { message: 'HMRC period summary did not include a period ID' });
+      }
 
       const detailResponse = await fetch(
         `${HMRC_CONFIG.testApiUrl}/individuals/business/self-employment/${nino}/${businessId}/period/${taxYear}/${encodeURIComponent(period.periodId)}`,
         { headers: { Accept: 'application/vnd.hmrc.5.0+json', ...apiHeaders } },
       );
-      if (!detailResponse.ok) return { ...period, periodDates: dates };
       const detailBody = await readJson(detailResponse);
-      return isRecord(detailBody) ? detailBody as HmrcPeriod : { ...period, periodDates: dates };
+      if (!detailResponse.ok) {
+        if (detailResponse.status === 404 && isNotFound(detailBody)) return null;
+        throw new HmrcResponseError(detailResponse.status, detailBody);
+      }
+      if (!isRecord(detailBody)) {
+        throw new HmrcResponseError(502, { message: 'HMRC returned an invalid period summary response' });
+      }
+      return detailBody as HmrcPeriod;
     }));
 
     const updates = details
+      .filter((period): period is HmrcPeriod => period !== null)
       .map((period) => ({
         ...period,
         receivedDate: receivedDateForPeriod(obligations, period.periodDates?.periodEndDate),
@@ -173,6 +237,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ updates });
   } catch (error) {
+    if (error instanceof HmrcResponseError) {
+      return hmrcErrorResponse(error);
+    }
     console.error('HMRC quarterly update history request failed:', error);
     return NextResponse.json({ error: 'Unable to retrieve submitted updates from HMRC' }, { status: 502 });
   }

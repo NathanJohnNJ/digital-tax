@@ -5,8 +5,8 @@ import { buildFraudPreventionHeaders } from "../../../../utils/buildFraudPrevent
 import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
 
 export async function POST(req: NextRequest) {
-  const { clientData, nino, businessId, taxYear } = await req.json();
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
+  const { clientData, nino, taxYear } = await req.json();
+  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
   const cookieStore = await cookies();
 
   let token: string | undefined;
@@ -35,8 +35,6 @@ export async function POST(req: NextRequest) {
   }
 
   const requestUrl = new URL(`${HMRC_CONFIG.testApiUrl}/obligations/details/${nino}/crystallisation`);
-  requestUrl.searchParams.set("businessId", businessId);
-  requestUrl.searchParams.set("typeOfBusiness", "self-employment");
   requestUrl.searchParams.set("taxYear", taxYear);
   
   const requestHeaders = {
@@ -79,4 +77,3 @@ export async function POST(req: NextRequest) {
   }
 
 }
-

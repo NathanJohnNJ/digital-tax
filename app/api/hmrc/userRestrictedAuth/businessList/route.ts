@@ -6,7 +6,7 @@ import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
 
 export async function POST(req: NextRequest) {
   const { clientData, nino } = await req.json();
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
+  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
   const cookieStore = await cookies();
 
   let token: string | undefined;
@@ -75,4 +75,3 @@ export async function POST(req: NextRequest) {
   }
 
 }
-

@@ -4,6 +4,7 @@ import { useState } from 'react';
 export default function CreateTestUser() {
   const [ selected, setSelected ] = useState<string[]>([]);
   const [ testUser, setTestUser ] = useState<any | null>(null);
+  const [ errorMessage, setErrorMessage ] = useState<string>();
 
   function handleSelect(checked:boolean, name:string) {
     if (checked) {
@@ -16,18 +17,31 @@ export default function CreateTestUser() {
   const serviceNames = ['national-insurance', 'self-assessment', 'mtd-income-tax', 'mtd-vat', ]
 
   async function clickHandle(){
-    console.log(selected);
-    const response = await fetch('/api/hmrc/applicationRestrictedAuth/createTestUser', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ serviceNamesList: selected })
-    });
-    const data = await response.json();
-    console.log(data);
-    setTestUser(data);
-    setSelected([]);
+    setErrorMessage(undefined);
+    try {
+      const response = await fetch('/api/hmrc/applicationRestrictedAuth/createTestUser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ serviceNamesList: selected })
+      });
+      const data: unknown = await response.json();
+
+      if (!response.ok) {
+        const message = data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
+          ? data.message
+          : data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
+            ? data.error
+            : 'Could not create a test user. Please try again.';
+        throw new Error(message);
+      }
+
+      setTestUser(data);
+      setSelected([]);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Could not create a test user. Please try again.');
+    }
   }
 
   const handleDownload = () => {
@@ -58,6 +72,7 @@ export default function CreateTestUser() {
           Create Test User
         </button>
       </form>
+      {errorMessage && <p role="alert" className="mb-4 font-semibold text-red-800">{errorMessage}</p>}
       { testUser &&
         <div className="flex flex-col mt-12">
           <p>Test user has been created. See details below:</p>

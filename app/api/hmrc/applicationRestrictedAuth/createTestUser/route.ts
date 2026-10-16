@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
 import { auth0 } from '@/lib/auth0';
 import { requestAppAccessToken } from '@/app/actions/requestAppAccessToken';
+import { forwardHmrcResponse } from '@/app/api/utils/forwardHmrcResponse';
 
 const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS;
 const allowedTestingEmails = testingAllowedEmailsValue
@@ -65,10 +66,5 @@ export async function POST(req: NextRequest) {
       serviceNames: serviceNamesList
     })
   });
-  if (!response.ok) {
-    return Response.json({ status: response.status });
-  }
-  const data = await response.json();
-  console.log(data);
-  return NextResponse.json(data);
+  return forwardHmrcResponse(response, 'test-user creation');
 }

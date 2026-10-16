@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from 'react';
 import { buildClientPayload } from '@/client/fraud/clientData';
+import IndividualTaxCalculation from '@/app/components/ui/account/IndividualTaxCalculation';
+import SelfAssessmentTaxCalculations from '@/app/components/ui/account/SelfAssessmentTaxCalculations';
 
 type QuarterlyUpdatesProps = {
   nino?: string;
@@ -132,13 +134,15 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
   const validIdentity = Boolean(nino && businessId);
   const taxYear = validPeriod ? getTaxYear(endDate) : undefined;
   const isCumulative = Boolean(taxYear && Number(taxYear.slice(0, 4)) >= 2025);
+  const supportsTaxTakenOffTradingIncome = Boolean(taxYear && Number(taxYear.slice(0, 4)) >= 2023);
   const expenseTotal = expenseMode === 'consolidated'
     ? Number(consolidatedExpenses) || 0
     : Object.values(expenses).reduce((total, amount) => total + (Number(amount) || 0), 0);
   const disallowableExpensesTotal = expenseMode === 'consolidated'
     ? Number(consolidatedDisallowableExpenses) || 0
     : Object.values(disallowableExpenses).reduce((total, amount) => total + (Number(amount) || 0), 0);
-  const incomeTotal = (Number(income.turnover) || 0) + (Number(income.other) || 0) - (Number(income.taxTakenOffTradingIncome) || 0);
+  const incomeTotal = (Number(income.turnover) || 0) + (Number(income.other) || 0)
+    - (supportsTaxTakenOffTradingIncome ? Number(income.taxTakenOffTradingIncome) || 0 : 0);
   const canSubmit = validPeriod && validIdentity && !submitting && (expenseMode !== 'consolidated' || confirmedThreshold);
   const netProfit = incomeTotal - expenseTotal;
 
@@ -162,6 +166,13 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
       const periodExpenses = expenseMode === 'consolidated'
         ? { consolidatedExpenses: Number(consolidatedExpenses) || 0 }
         : Object.fromEntries(expenseFields.map(({ name }) => [name, Number(expenses[name]) || 0]));
+      const periodIncome = {
+        turnover: Number(income.turnover) || 0,
+        other: Number(income.other) || 0,
+        ...(supportsTaxTakenOffTradingIncome && {
+          taxTakenOffTradingIncome: Number(income.taxTakenOffTradingIncome) || 0,
+        }),
+      };
       const request = await fetch('/api/hmrc/userRestrictedAuth/submitQuarterlyUpdate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,9 +183,7 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
           taxYear,
           periodStartDate: isCumulative ? getTaxYearStartDate(taxYear) : startDate,
           periodEndDate: endDate,
-          periodIncome: Object.fromEntries(
-            Object.entries(income).map(([field, amount]) => [field, Number(amount) || 0]),
-          ),
+          periodIncome,
           periodExpenses,
           ...(expenseMode === 'itemised' && {
             periodDisallowableExpenses: Object.fromEntries(
@@ -200,7 +209,7 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
     }
   }
 
-  if (!validPeriod || !validIdentity) {
+  if (!validPeriod || !nino || !businessId) {
     return (
       <div className="border-2 border-blue-400 bg-linear-to-tr from-gray-200 to-40% to-gray-50 shadow-md rounded-2xl p-4 mt-6">
         <p className="text-center text-gray-700">
@@ -211,30 +220,33 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
   }
 
   return (
-    <div className="border-2 border-blue-400 bg-linear-to-tr from-gray-200 to-40% to-gray-50 shadow-2xl rounded-2xl p-4 mt-6 flex flex-col w-full">
-      <div className="mb-5 border-b border-sky-100 pb-4">
-        <h2 className="font-extrabold text-2xl text-center">Review update period</h2>
-        <dl className="mx-auto mt-4 grid max-w-2xl grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-sm sm:text-base">
-          <dt className="font-semibold text-gray-700">Period</dt>
-          <dd>{displayDate(startDate)} to {displayDate(endDate)}</dd>
-          <dt className="font-semibold text-gray-700">Tax year</dt>
-          <dd>{taxYear}</dd>
-          <dt className="font-semibold text-gray-700">Business ID</dt>
-          <dd className="break-all">{businessId}</dd>
-        </dl>
-        {isCumulative && taxYear && (
-          <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-700">
-            For {taxYear} HMRC requires cumulative totals. Enter figures from the start of the tax year through {displayDate(endDate)}; this submission covers {displayDate(getTaxYearStartDate(taxYear))} to {displayDate(endDate)}.
-          </p>
-        )}
-      </div>
+    <>
+      <div className="border-2 border-blue-400 bg-linear-to-tr from-gray-200 to-40% to-gray-50 shadow-2xl rounded-2xl p-4 mt-6 flex flex-col w-full">
+        <div className="mb-5 border-b border-sky-100 pb-4">
+          <h2 className="font-extrabold text-2xl text-center">Review Update Period</h2>
+          <dl className="mx-auto mt-4 grid max-w-2xl grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-sm sm:text-base">
+            <dt className="font-semibold text-gray-700">Period</dt>
+            <dd>{displayDate(startDate)} to {displayDate(endDate)}</dd>
+            <dt className="font-semibold text-gray-700">Tax year</dt>
+            <dd>{taxYear}</dd>
+            <dt className="font-semibold text-gray-700">Business ID</dt>
+            <dd className="break-all">{businessId}</dd>
+          </dl>
+          {isCumulative && taxYear && (
+            <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-700">
+              For {taxYear} HMRC requires cumulative totals. Enter figures from the start of the tax year through {displayDate(endDate)}; this submission covers {displayDate(getTaxYearStartDate(taxYear))} to {displayDate(endDate)}.
+            </p>
+          )}
+        </div>
 
-      <form onSubmit={submitUpdate} className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+        <form onSubmit={submitUpdate} className="mx-auto flex w-full max-w-3xl flex-col gap-5">
         <fieldset className="rounded-lg border border-blue-300 bg-white/60 p-4">
           <legend className="px-2 text-xl font-bold text-gray-900">Revenue</legend>
           <MoneyInput label="Turnover" value={income.turnover} onChange={(value) => updateIncome('turnover', value)} />
           <MoneyInput label="Other income" value={income.other} onChange={(value) => updateIncome('other', value)} />
-          <MoneyInput label="Tax taken off trading income" value={income.taxTakenOffTradingIncome} onChange={(value) => updateIncome('taxTakenOffTradingIncome', value)} />
+          {supportsTaxTakenOffTradingIncome && (
+            <MoneyInput label="Tax taken off trading income" value={income.taxTakenOffTradingIncome} onChange={(value) => updateIncome('taxTakenOffTradingIncome', value)} />
+          )}
         </fieldset>
 
         <fieldset className="rounded-lg border border-blue-300 bg-white/60 p-4">
@@ -325,9 +337,24 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
           disabled={!canSubmit}
           className="w-fit self-center rounded-lg bg-linear-to-tr from-blue-700 to-blue-400 px-4 py-2 font-semibold text-white shadow-sm hover:to-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? 'Submitting...' : 'Submit update to HMRC'}
+          {submitting ? 'Submitting...' : 'Submit Update To HMRC'}
         </button>
-      </form>
-    </div>
+        </form>
+      </div>
+      {taxYear && nino && businessId && (
+        <SelfAssessmentTaxCalculations
+          nino={nino}
+          businessId={businessId}
+          taxYear={taxYear}
+        />
+      )}
+      {taxYear && nino && (
+        <IndividualTaxCalculation
+          nino={nino}
+          taxYear={taxYear}
+          calculationType="in-year"
+        />
+      )}
+    </>
   )
 }

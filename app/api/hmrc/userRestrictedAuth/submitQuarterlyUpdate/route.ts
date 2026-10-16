@@ -89,9 +89,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'The tax year does not match the reporting period' }, { status: 400 });
   }
 
-  const periodIncome = readAmounts(input.periodIncome, incomeFields);
+  const supportsTaxTakenOffTradingIncome = Number(taxYear.slice(0, 4)) >= 2023;
+  const taxYearIncomeFields = supportsTaxTakenOffTradingIncome
+    ? incomeFields
+    : incomeFields.slice(0, 2);
+  const periodIncome = readAmounts(input.periodIncome, taxYearIncomeFields);
   if (!periodIncome) {
-    return NextResponse.json({ error: 'Income must include valid turnover, other income, and tax deducted amounts' }, { status: 400 });
+    const message = supportsTaxTakenOffTradingIncome
+      ? 'Income must include valid turnover, other income, and tax deducted amounts'
+      : 'Income must include valid turnover and other income amounts';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const rawExpenses = input.periodExpenses;
@@ -113,7 +120,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Cumulative updates must start at the beginning of the tax year' }, { status: 400 });
   }
 
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
+  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, request);
   const cookieStore = await cookies();
   let token = cookieStore.get('access_token')?.value;
 

@@ -35,3 +35,7 @@ For tax years beginning in 2025 or later, the current implementation submits cum
 Select **Submit update to HMRC**. The app validates the form and sends the request through its server-side HMRC integration. A success message means HMRC's sandbox accepted the request; it is not confirmation of a live tax filing.
 
 If the request fails, the form displays an error returned by the app or HMRC. Check the figures, business, period, and HMRC sandbox connection before retrying. Do not submit real tax information to this development app.
+
+### Request an in-year calculation
+
+After reviewing the figures HMRC has received, select **Generate in-year calculation** to ask HMRC for an in-year tax calculation. The result box shows the calculation ID; this page does not retrieve or display the calculation itself. A calculation request is separate from submitting an update and does not change the update.

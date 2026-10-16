@@ -30,8 +30,12 @@ These are POST routes that receive request data from the app and call correspond
 - `/api/hmrc/userRestrictedAuth/obligations/yearEnd`
 - `/api/hmrc/userRestrictedAuth/quarterlyUpdateHistory`
 - `/api/hmrc/userRestrictedAuth/listSelfAssessmentTaxCalculations`
+- `/api/hmrc/userRestrictedAuth/retrieveSelfAssessmentTaxCalculation`
+- `/api/hmrc/userRestrictedAuth/individualTaxCalculation`
 
 The route handlers validate some identifiers, attach authentication and fraud-prevention headers, and return parsed HMRC responses. Their upstream HMRC methods, paths, and API versions are defined in the individual route files.
+The quarterly update history route treats the documented Sandbox `MATCHING_RESOURCE_NOT_FOUND` summary/detail responses as no data and `NO_OBLIGATIONS_FOUND` as an empty obligations list. Other unsuccessful summary, obligations, or period-detail responses preserve HMRC's status and error details instead of returning partial history.
+The calculation-list route calls the Sandbox Individual Calculations v9.0 endpoint `GET /individuals/calculations/{nino}/self-assessment/{taxYear}` with `Accept: application/vnd.hmrc.9.0+json`. HMRC's optional `calculationType` query filter is omitted when listing all calculations.
 
 <br></br>
 
@@ -39,10 +43,11 @@ The route handlers validate some identifiers, attach authentication and fraud-pr
 
 ### Submission routes
 
-- `POST /api/hmrc/userRestrictedAuth/submitQuarterlyUpdate` validates dates and income/expense fields, then submits either a period update or a cumulative update according to the tax year.
+- `POST /api/hmrc/userRestrictedAuth/submitQuarterlyUpdate` validates dates and tax-year-specific income/expense fields, then submits either a period update or a cumulative update according to the tax year. `taxTakenOffTradingIncome` is sent from tax year 2023–24 onward; earlier tax years omit it.
 - `POST /api/hmrc/userRestrictedAuth/annualSubmission` accepts `action: "retrieve"` or `action: "submit"` for a self-employment annual summary.
+- `POST /api/hmrc/userRestrictedAuth/individualTaxCalculation` triggers an HMRC Self Assessment calculation and returns its calculation ID. The quarterly page requests an in-year calculation; the year-end page requests an intent-to-finalise calculation. Neither action submits a final declaration.
 
-Both routes call HMRC's test API. The annual summary route does not implement a complete Self Assessment return or final declaration.
+These routes call HMRC's test API. The annual summary route does not implement a complete Self Assessment return or final declaration.
 
 <br></br>
 

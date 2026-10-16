@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
 import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPreventionHeaders";
 import { requestAppAccessToken } from '@/app/actions/requestAppAccessToken';
+import { forwardHmrcResponse } from '@/app/api/utils/forwardHmrcResponse';
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
   }
   
   const clientData = await req.json();
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
+  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
   const response = await fetch(`${HMRC_CONFIG.testApiUrl}/test/fraud-prevention-headers/business-details-mtd/validation-feedback?connectionMethod=WEB_APP_VIA_SERVER`, {
     method: "GET",
     headers: {
@@ -39,9 +40,5 @@ export async function POST(req: NextRequest) {
       ...fraudPreventionHeaders
     },
   });
-  if (!response.ok) {
-    return Response.json({ status: response.status });
-  }
-  const data = await response.json();
-  return NextResponse.json(data);
+  return forwardHmrcResponse(response, 'fraud-header validation');
 }

@@ -5,8 +5,8 @@ import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPrevention
 import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
 
 export async function POST(req: NextRequest) {
-  const { clientData, nino, businessId, taxYear } = await req.json();
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
+  const { clientData, nino, taxYear } = await req.json();
+  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
   const cookieStore = await cookies();
 
   let token: string | undefined;
@@ -34,10 +34,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Missing access token" }, { status: 401 });
   }
 
-  const requestUrl = new URL(`${HMRC_CONFIG.testApiUrl}/individuals/calculations/${nino}/self-assessment /${taxYear}`);
-  requestUrl.searchParams.set("businessId", businessId);
-  requestUrl.searchParams.set("typeOfBusiness", "self-employment");
-  requestUrl.searchParams.set("taxYear", taxYear);
+  const requestUrl = new URL(`${HMRC_CONFIG.testApiUrl}/individuals/calculations/${nino}/self-assessment/${taxYear}`);
   
   const requestHeaders = {
     "Accept": "application/vnd.hmrc.9.0+json",
@@ -79,4 +76,3 @@ export async function POST(req: NextRequest) {
   }
 
 }
-
