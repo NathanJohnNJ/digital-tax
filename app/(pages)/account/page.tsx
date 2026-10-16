@@ -27,7 +27,7 @@ export default async function AccountHome(){
         ) : (
           <div className="flex flex-col align-items-center justify-content-center">
             <h3 className="text-xl font-bold text-stone-700 tracking-tight text-center">Submit your quarterly updates and end of year tax returns easily with</h3>
-            <Image src="/images/rectWithNJTD.png" width="500" height="100" alt="Digital Tax." />
+            <Image src="/images/rectWithNJTD.png" className="aspect-7.5/2 self-center -ml-6" width="500" height="100" alt="Digital Tax." />
             <p className="text-lg text-gray-400 text-center mt-2">
               Get started by logging in to your account
             </p>

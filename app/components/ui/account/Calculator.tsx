@@ -111,7 +111,7 @@ export default function Calculator(){
       <button type="button" onClick={() => setVisible((current) => !current)} className="w-fit border-2 border-blue-500 rounded-xl px-3 py-1 mb-4 hover:scale-105 shadow-sm hover:shadow-lg font-medium">{visible ? 'Hide calculators' : 'Show calculators'}</button>
       {visible && <div className="grid w-full items-start gap-4 grid-flow-col md:grid-cols-2 2xl:grid-cols-3 grid-rows-5">
         {table('Income', 'income', income, incomeFields)}
-        {table('Disallowable expenses', 'disallowable', disallowableExpense, disallowableExpenseFields)}
+        {table('Disallowable Expenses', 'disallowable', disallowableExpense, disallowableExpenseFields)}
         {table('Expenses', 'expense', expense, expenseFields)}
       </div>}
     </div>

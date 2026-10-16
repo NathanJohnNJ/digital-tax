@@ -9,6 +9,50 @@ type BusinessDetailsProps = {
   nino: string | string[] | undefined;
 };
 
+type BusinessDetailsErrorPayload = {
+  error?: unknown;
+  message?: unknown;
+  errors?: unknown;
+  body?: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getErrorMessage(payload: unknown, status: number) {
+  const errorPayload: BusinessDetailsErrorPayload = isRecord(payload) ? payload : {};
+  const nestedBody = isRecord(errorPayload.body) ? errorPayload.body : undefined;
+  const hmrcError = nestedBody ?? errorPayload;
+  const messages: string[] = [];
+
+  if (typeof hmrcError.message === 'string') messages.push(hmrcError.message);
+  else if (typeof hmrcError.error === 'string') messages.push(hmrcError.error);
+
+  if (Array.isArray(hmrcError.errors)) {
+    for (const detail of hmrcError.errors) {
+      if (isRecord(detail) && typeof detail.message === 'string' && !messages.includes(detail.message)) {
+        messages.push(detail.message);
+      }
+    }
+  }
+
+  if (messages.length > 0) return messages.join(' ');
+
+  if (typeof payload === 'string' && payload.trim() && payload.length <= 300 && !/^\s*</.test(payload)) {
+    return payload;
+  }
+
+  if (status === 401 || status === 403) {
+    return 'HMRC could not authorise this request. Reconnect your HMRC account and try again.';
+  }
+  if (status === 404) return 'HMRC could not find details for this business.';
+  if (status === 429) return 'HMRC is receiving too many requests. Please wait a moment and try again.';
+  if (status >= 500) return 'HMRC is temporarily unavailable. Please try again later.';
+  if (status === 400) return 'HMRC could not process the request. Check the business details and try again.';
+  return 'Business details could not be retrieved. Please check the business and try again.';
+}
+
 function DetailRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
 
@@ -31,32 +75,78 @@ function formatQuarterlyPeriodType(periodType?: string) {
 
 export default function BusinessDetails({ businessId, nino }: BusinessDetailsProps) {
   const [businessDetails, setBusinessDetails] = useState<BusinessDetailsData>();
+  const [error, setError] = useState<string>();
+  const [loading, setLoading] = useState(true);
   const [showMore, setShowMore] = useState(false);
   const selectedBusinessId = Array.isArray(businessId) ? businessId[0] : businessId;
   const selectedNino = Array.isArray(nino) ? nino[0] : nino;
 
   useEffect(() => {
-    async function getDetails(clientData: unknown) {
-      const request = await fetch('/api/hmrc/userRestrictedAuth/businessDetails', {
-        method: 'POST',
-        body: JSON.stringify({
-          nino: selectedNino,
-          businessID: selectedBusinessId,
-          clientData,
-        }),
-      });
-
-      if (!request.ok) return undefined;
-      return request.json() as Promise<BusinessDetailsData>;
-    }
-
+    let cancelled = false;
     async function loadDetails() {
-      const clientData = await buildClientPayload();
-      setBusinessDetails(await getDetails(clientData));
+      setBusinessDetails(undefined);
+      setError(undefined);
+      setLoading(true);
+
+      try {
+        const clientData = await buildClientPayload();
+        const response = await fetch('/api/hmrc/userRestrictedAuth/businessDetails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nino: selectedNino,
+            businessID: selectedBusinessId,
+            clientData,
+          }),
+        });
+        const responseText = await response.text();
+        let responseBody: unknown = responseText;
+        try {
+          responseBody = responseText ? JSON.parse(responseText) : undefined;
+        } catch {
+          // HMRC can return a non-JSON body; retain its text for the user-facing error.
+        }
+
+        if (!response.ok) {
+          throw new Error(getErrorMessage(responseBody, response.status));
+        }
+        if (!isRecord(responseBody) || typeof responseBody.businessId !== 'string') {
+          throw new Error('HMRC returned business details in an unexpected format. Please try again later.');
+        }
+        if (!cancelled) setBusinessDetails(responseBody as BusinessDetailsData);
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error
+            ? loadError.message
+            : 'Business details could not be retrieved. Please try again.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
 
     loadDetails();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedBusinessId, selectedNino]);
+
+  if (loading) {
+    return (
+      <div className="mt-6 rounded-2xl border-2 border-blue-400 p-4 shadow-md">
+        <p className="text-center text-gray-700" role="status">Loading business details...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-6 rounded-2xl border-2 border-red-300 bg-red-50 p-4 shadow-md" role="alert">
+        <h3 className="text-center text-lg font-bold text-red-900">Business details could not be loaded</h3>
+        <p className="mt-2 text-center text-red-800">{error}</p>
+      </div>
+    );
+  }
 
   if (!businessDetails) {
     return (
@@ -78,6 +168,7 @@ export default function BusinessDetails({ businessId, nino }: BusinessDetailsPro
   ].filter(Boolean);
 
   return (
+    <>
     <div className="border-2 border-blue-400 shadow-2xl bg-linear-to-tr from-gray-200 to-40% to-gray-50 rounded-2xl p-4 mt-6 flex flex-col justify-self-start w-7/8">
       <div className="flex items-center justify-between gap-4 mb-2">
         <h3 className="font-extrabold text-2xl text-center flex-1">Business Details</h3>
@@ -111,15 +202,18 @@ export default function BusinessDetails({ businessId, nino }: BusinessDetailsPro
           </>
         )}
       </dl>
-
-      {address.length > 0 && (
-        <div className="mt-4 border-t border-sky-100 pt-4">
-          <h4 className="text-xl font-bold mb-2">Business Address</h4>
-          <address className="not-italic space-y-1 w-9/14">
+    </div>
+    {address.length > 0 && (
+    <div className="border-2 border-blue-400 shadow-2xl bg-linear-to-tr from-gray-200 to-40% to-gray-50 rounded-2xl p-4 mt-6 flex flex-col justify-self-start">
+      <div className="flex flex-col items-center justify-between gap-4 mb-2">
+        <h3 className="font-extrabold text-2xl text-center">Business Address</h3>
+          <address className="not-italic w-full">
             {address.map((line, index) => <p className="text-gray-700 text-right" key={`${line}-${index}`}>{line}</p>)}
           </address>
         </div>
-      )}
+
     </div>
+     )}
+    </>
   );
 }

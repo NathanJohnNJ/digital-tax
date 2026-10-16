@@ -18,7 +18,6 @@ useEffect(()=>{
       method: 'POST',
       body: JSON.stringify({
         nino: nino,
-        businessId: businessId,
         clientData: clientData,
         taxYear: year
       })

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const fraudHeaders = await buildFraudPreventionHeaders(clientData);
+    const fraudHeaders = await buildFraudPreventionHeaders(clientData, request);
     const cookieStore = await cookies();
     let token = cookieStore.get('access_token')?.value;
 
