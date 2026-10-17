@@ -26,7 +26,10 @@ describe('trusted client IP', () => {
   it('does not trust x-forwarded-for outside Vercel', () => {
     vi.stubEnv('VERCEL', '');
     const request = new Request('https://example.test/api', {
-      headers: { 'x-forwarded-for': '198.51.100.25' },
+      headers: {
+        'x-forwarded-for': '198.51.100.25',
+        'x-real-ip': '198.51.100.26',
+      },
     });
 
     expect(getTrustedClientIp(request)).toBeUndefined();
@@ -43,6 +46,28 @@ describe('trusted client IP', () => {
     }))).toBeUndefined();
   });
 
+  it('falls back to a valid platform IP when the forwarded address is invalid', () => {
+    const request = new Request('https://example.test/api', {
+      headers: {
+        'x-forwarded-for': 'not-an-ip, 203.0.113.10',
+        'x-real-ip': '198.51.100.26',
+      },
+    });
+
+    expect(getTrustedClientIp(request)).toBe('198.51.100.26');
+  });
+
+  it('rejects an invalid platform IP fallback', () => {
+    const request = new Request('https://example.test/api', {
+      headers: {
+        'x-forwarded-for': 'not-an-ip',
+        'x-real-ip': 'not-an-ip-either',
+      },
+    });
+
+    expect(getTrustedClientIp(request)).toBeUndefined();
+  });
+
   it('does not use a forged body IP when building HMRC headers', async () => {
     vi.stubEnv('VERCEL', '1');
     vi.stubEnv('SERVER_PUBLIC_IP', '192.0.2.10');
@@ -57,7 +82,7 @@ describe('trusted client IP', () => {
     const headers = await buildFraudPreventionHeaders(
       { publicIP: '203.0.113.50', publicIPTimestamp: '2000-01-01T00:00:00.000Z' },
       new Request('https://example.test/api', {
-        headers: { 'x-forwarded-for': '198.51.100.25' },
+        headers: { 'x-forwarded-for': '198.51.100.25, 203.0.113.10' },
       }),
     );
 
