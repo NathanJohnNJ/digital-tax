@@ -1,11 +1,8 @@
 import { isIP } from 'node:net';
+import { ipAddress } from '@vercel/functions';
 
 export function getTrustedClientIp(request: Pick<Request, 'headers'>): string | undefined {
-  // Vercel replaces this header at ingress. Deployments behind another proxy
-  // must configure that proxy as trusted before this can identify the end user.
-  if (process.env.VERCEL !== '1') {
-    return undefined;
-  }
+  const ip = ipAddress(request);
 
   const forwardedFor = request.headers.get('x-forwarded-for')?.trim();
 
@@ -13,5 +10,5 @@ export function getTrustedClientIp(request: Pick<Request, 'headers'>): string | 
     return undefined;
   }
 
-  return isIP(forwardedFor) ? forwardedFor : undefined;
+  return isIP(forwardedFor) ? forwardedFor : ip;
 }
