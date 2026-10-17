@@ -1,78 +1,93 @@
-import { HMRC_CONFIG } from "@/config/hmrc";
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from 'next/headers';
-import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPreventionHeaders";
 import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
+import { HMRC_CONFIG } from '@/config/hmrc';
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import { buildFraudPreventionHeaders } from '../../../utils/buildFraudPreventionHeaders';
+import {
+  forwardValidatedHmrcResponse,
+  isCalculationListForTaxYear,
+  isRecord,
+  isValidNino,
+  isValidTaxYear,
+  readJsonRecord,
+} from '../../../utils/hmrcValidation';
 
-export async function POST(req: NextRequest) {
-  const { clientData, nino, taxYear } = await req.json();
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
-  const cookieStore = await cookies();
-
-  let token: string | undefined;
-  if(!cookieStore.has('access_token')){ 
-    const tokenResult = await requestUserAccessToken();
-    if (!tokenResult.ok) {
-      return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
-    }
-
-    const options = {
-      httpOnly: true,
-      maxAge: tokenResult.tokens.expires_in,
-      secure: process.env.NODE_ENV === "production"
-    };
-    cookieStore.set('access_token', tokenResult.tokens.access_token, options);
-    if (tokenResult.tokens.refresh_token) {
-      cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
-    }
-    token = tokenResult.tokens.access_token;
-  } else {
-    token = cookieStore.get('access_token')?.value;
+export async function POST(request: NextRequest) {
+  const parsed = await readJsonRecord(request);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  if (!token) {
-    return Response.json({ error: "Missing access token" }, { status: 401 });
+  const { clientData, nino, taxYear } = parsed.value;
+  if (!isValidNino(nino)) {
+    return NextResponse.json({ error: 'A valid National Insurance number is required' }, { status: 400 });
   }
-
-  const requestUrl = new URL(`${HMRC_CONFIG.testApiUrl}/individuals/calculations/${nino}/self-assessment/${taxYear}`);
-  
-  const requestHeaders = {
-    "Accept": "application/vnd.hmrc.9.0+json",
-    "Authorization": `Bearer ${token}`,
-    ...fraudPreventionHeaders
-  };
+  if (!isValidTaxYear(taxYear)) {
+    return NextResponse.json({ error: 'A valid tax year is required' }, { status: 400 });
+  }
+  if (!isRecord(clientData)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data must be a JSON object' }, { status: 400 });
+  }
 
   try {
-    const linkRequest = await fetch(requestUrl, {
-      method: "GET",
-      headers: requestHeaders,
+    const fraudHeaders = await buildFraudPreventionHeaders(clientData, request);
+    const cookieStore = await cookies();
+    const hasAccessToken = cookieStore.has('access_token');
+    let token = hasAccessToken ? cookieStore.get('access_token')?.value : undefined;
+
+    if (!token && !hasAccessToken) {
+      const tokenResult = await requestUserAccessToken();
+      if (!tokenResult.ok) {
+        return NextResponse.json({ error: 'HMRC authorisation is required' }, { status: tokenResult.status });
+      }
+
+      token = tokenResult.tokens.access_token;
+      const options = {
+        httpOnly: true,
+        maxAge: tokenResult.tokens.expires_in,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+      };
+      cookieStore.set('access_token', token, options);
+      if (tokenResult.tokens.refresh_token) {
+        cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
+      }
+    }
+
+    if (!token) {
+      return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
+    }
+
+    const endpoint = [
+      HMRC_CONFIG.testApiUrl,
+      'individuals/calculations',
+      encodeURIComponent(nino),
+      'self-assessment',
+      encodeURIComponent(taxYear),
+    ].join('/');
+    const hmrcResponse = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/vnd.hmrc.9.0+json',
+        Authorization: `Bearer ${token}`,
+        ...fraudHeaders,
+      },
     });
 
-    const linkResponseText = await linkRequest.text();
-    let linkResponse: any;
-    try {
-      linkResponse = JSON.parse(linkResponseText);
-    } catch {
-      linkResponse = linkResponseText;
-    }
-
-    if (!linkRequest.ok) {
-      const message = typeof linkResponse?.message === 'string'
-        ? linkResponse.message
-        : 'HMRC link request failed';
-
-      return NextResponse.json(
-        { error: message, status: linkRequest.status },
-        { status: linkRequest.status }
-      );
-    }
-
-    return NextResponse.json(linkResponse);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);           
-    console.error('HMRC business list request failed:', err);
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    return forwardValidatedHmrcResponse(
+      hmrcResponse,
+      'tax calculation list request',
+      (responseBody) => isCalculationListForTaxYear(responseBody, taxYear),
+      [nino],
+    );
+  } catch (error) {
+    console.error('HMRC tax calculation list request could not be completed', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    });
+    return NextResponse.json(
+      { error: 'Unable to retrieve tax calculations from HMRC. Please try again later.' },
+      { status: 502 },
+    );
   }
-
 }

@@ -1,77 +1,85 @@
-import { HMRC_CONFIG } from "@/config/hmrc";
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from 'next/headers';
-import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPreventionHeaders";
 import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
+import { HMRC_CONFIG } from '@/config/hmrc';
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import { buildFraudPreventionHeaders } from '../../../utils/buildFraudPreventionHeaders';
+import {
+  forwardValidatedHmrcResponse,
+  isBusinessListResponse,
+  isRecord,
+  isValidNino,
+  readJsonRecord,
+} from '../../../utils/hmrcValidation';
 
-export async function POST(req: NextRequest) {
-  const { clientData, nino } = await req.json();
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
-  const cookieStore = await cookies();
-
-  let token: string | undefined;
-  if(!cookieStore.has('access_token')){ 
-    const tokenResult = await requestUserAccessToken();
-    if (!tokenResult.ok) {
-      return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
-    }
-
-    const options = {
-      httpOnly: true,
-      maxAge: tokenResult.tokens.expires_in,
-      secure: process.env.NODE_ENV === "production"
-    };
-    cookieStore.set('access_token', tokenResult.tokens.access_token, options);
-    if (tokenResult.tokens.refresh_token) {
-      cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
-    }
-    token = tokenResult.tokens.access_token;
-  } else {
-    token = cookieStore.get('access_token')?.value;
+export async function POST(request: NextRequest) {
+  const parsed = await readJsonRecord(request);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  if (!token) {
-    return Response.json({ error: "Missing access token" }, { status: 401 });
+  const { clientData, nino } = parsed.value;
+  if (!isValidNino(nino)) {
+    return NextResponse.json({ error: 'A valid National Insurance number is required' }, { status: 400 });
   }
-
-  const requestUrl = `${HMRC_CONFIG.testApiUrl}/individuals/business/details/${nino}/list`;
-  const requestHeaders = {
-    "Accept": "application/vnd.hmrc.2.0+json",
-    "Authorization": `Bearer ${token}`,
-    ...fraudPreventionHeaders
-  };
+  if (!isRecord(clientData)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data must be a JSON object' }, { status: 400 });
+  }
 
   try {
-    const businessRequest = await fetch(requestUrl, {
-      method: "GET",
-      headers: requestHeaders,
+    const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, request);
+    const cookieStore = await cookies();
+    const hasAccessToken = cookieStore.has('access_token');
+    let token = hasAccessToken ? cookieStore.get('access_token')?.value : undefined;
+
+    if (!token && !hasAccessToken) {
+      const tokenResult = await requestUserAccessToken();
+      if (!tokenResult.ok) {
+        return NextResponse.json({ error: 'HMRC authorisation is required' }, { status: tokenResult.status });
+      }
+
+      token = tokenResult.tokens.access_token;
+      const options = {
+        httpOnly: true,
+        maxAge: tokenResult.tokens.expires_in,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+      };
+      cookieStore.set('access_token', token, options);
+      if (tokenResult.tokens.refresh_token) {
+        cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
+      }
+    }
+
+    if (!token) {
+      return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
+    }
+
+    const hmrcResponse = await fetch(
+      `${HMRC_CONFIG.testApiUrl}/individuals/business/details/${encodeURIComponent(nino)}/list`,
+      {
+        method: 'GET',
+        headers: {
+          Accept: 'application/vnd.hmrc.2.0+json',
+          Authorization: `Bearer ${token}`,
+          ...fraudPreventionHeaders,
+        },
+      },
+    );
+
+    return forwardValidatedHmrcResponse(
+      hmrcResponse,
+      'business list request',
+      isBusinessListResponse,
+      [nino],
+    );
+  } catch (error) {
+    console.error('HMRC business list request could not be completed', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
     });
-
-    const businessResponseText = await businessRequest.text();
-    let businessResponse: any;
-    try {
-      businessResponse = JSON.parse(businessResponseText);
-    } catch {
-      businessResponse = businessResponseText;
-    }
-
-    if (!businessRequest.ok) {
-      const message = typeof businessResponse?.message === 'string'
-        ? businessResponse.message
-        : 'HMRC business list request failed';
-
-      return NextResponse.json(
-        { error: message, status: businessRequest.status },
-        { status: businessRequest.status }
-      );
-    }
-
-    return NextResponse.json(businessResponse);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('HMRC business list request failed:', err);
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Unable to retrieve businesses from HMRC. Please try again later.' },
+      { status: 502 },
+    );
   }
-
 }
