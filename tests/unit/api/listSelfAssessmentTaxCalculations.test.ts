@@ -11,10 +11,10 @@ const { cookieStore } = vi.hoisted(() => ({
 }));
 
 vi.mock('next/headers', () => ({ cookies: vi.fn() }));
-vi.mock('@/app/actions/requestUserAccessToken', () => ({
+vi.mock('../../../app/actions/requestUserAccessToken', () => ({
   requestUserAccessToken: vi.fn(),
 }));
-vi.mock('@/app/api/utils/buildFraudPreventionHeaders', () => ({
+vi.mock('../../../app/api/utils/buildFraudPreventionHeaders', () => ({
   buildFraudPreventionHeaders: vi.fn().mockResolvedValue({
     'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
   }),
@@ -44,7 +44,7 @@ describe('self-assessment calculation-list HMRC request', () => {
     cookieStore.get.mockReturnValue({ value: 'sandbox-access-token' });
     vi.mocked(cookies).mockResolvedValue(cookieStore as unknown as Awaited<ReturnType<typeof cookies>>);
     vi.stubGlobal('fetch', vi.fn());
-    ({ POST: post } = await import('@/app/api/hmrc/userRestrictedAuth/listSelfAssessmentTaxCalculations/route'));
+    ({ POST: post } = await import('../../../app/api/hmrc/userRestrictedAuth/listSelfAssessmentTaxCalculations/route'));
   });
 
   it('uses the current Sandbox v9 list path, Accept version, and only documented query parameters', async () => {
@@ -54,6 +54,8 @@ describe('self-assessment calculation-list HMRC request', () => {
           calculationId: 'f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c',
           calculationType: 'intent-to-finalise',
           calculationTimestamp: '2026-10-01T12:00:00.000Z',
+          calculationTrigger: 'attended',
+          calculationOutcome: 'PROCESSED',
         },
       ],
     };
@@ -92,6 +94,7 @@ describe('self-assessment calculation-list HMRC request', () => {
     expect(await response.json()).toEqual({
       error: errorBody.message,
       status: 404,
+      details: errorBody,
     });
   });
 });

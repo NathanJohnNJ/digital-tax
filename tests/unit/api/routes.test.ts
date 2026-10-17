@@ -6,16 +6,16 @@ import { POST as businessListPost } from '../../../app/api/hmrc/userRestrictedAu
 import { GET as databaseGet, POST as databasePost } from '../../../app/api/db/route';
 import { GET as cookiesGet, POST as cookiesPost } from '../../../app/api/cookies/route';
 import { cookies } from 'next/headers';
-import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
-import { buildFraudPreventionHeaders } from '@/app/api/utils/buildFraudPreventionHeaders';
-import { pool } from '@/lib/db';
+import { requestUserAccessToken } from '../../../app/actions/requestUserAccessToken';
+import { buildFraudPreventionHeaders } from '../../../app/api/utils/buildFraudPreventionHeaders';
+import { pool } from '../../../lib/db';
 
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
 
 vi.mock('next/headers', () => ({ cookies: vi.fn() }));
-vi.mock('@/app/actions/requestUserAccessToken', () => ({ requestUserAccessToken: vi.fn() }));
-vi.mock('@/app/api/utils/buildFraudPreventionHeaders', () => ({ buildFraudPreventionHeaders: vi.fn() }));
-vi.mock('@/lib/db', () => ({ pool: { query: queryMock } }));
+vi.mock('../../../app/actions/requestUserAccessToken', () => ({ requestUserAccessToken: vi.fn() }));
+vi.mock('../../../app/api/utils/buildFraudPreventionHeaders', () => ({ buildFraudPreventionHeaders: vi.fn() }));
+vi.mock('../../../lib/db', () => ({ pool: { query: queryMock } }));
 
 const cookieStore = {
   has: vi.fn(),
@@ -63,7 +63,7 @@ describe('API route handlers', () => {
     const response = await quarterlyObligationsPost(createPostRequest('http://localhost/api/quarterly', {
       clientData: { browserUserAgent: 'test' },
       nino: 'AB123456C',
-      businessId: 'XBIS123',
+      businessId: 'XBIS12345678901',
       taxYear: '2018-19'
     }));
 
@@ -71,7 +71,7 @@ describe('API route handlers', () => {
     expect(await response.json()).toEqual(responsePayload);
     const [requestUrl, requestOptions] = fetchMock.mock.calls[0] as unknown as [URL, RequestInit];
     expect(requestUrl.pathname).toContain('/obligations/details/AB123456C/income-and-expenditure');
-    expect(requestUrl.searchParams.get('businessId')).toBe('XBIS123');
+    expect(requestUrl.searchParams.get('businessId')).toBe('XBIS12345678901');
     expect(requestUrl.searchParams.get('typeOfBusiness')).toBe('self-employment');
     expect(requestUrl.searchParams.get('fromDate')).toBe('2018-04-06');
     expect(requestUrl.searchParams.get('toDate')).toBe('2019-04-05');
@@ -82,11 +82,15 @@ describe('API route handlers', () => {
     vi.mocked(fetch).mockResolvedValueOnce(createHmrcResponse({ message: 'Not authorised' }, 403));
 
     const response = await quarterlyObligationsPost(createPostRequest('http://localhost/api/quarterly', {
-      clientData: {}, nino: 'AB123456C', businessId: 'XBIS123', taxYear: '2018-19'
+      clientData: {}, nino: 'AB123456C', businessId: 'XBIS12345678901', taxYear: '2018-19'
     }));
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({ error: 'Not authorised', status: 403 });
+    expect(await response.json()).toEqual({
+      error: 'Not authorised',
+      status: 403,
+      details: { message: 'Not authorised' }
+    });
   });
 
   it('returns the token action error without calling HMRC', async () => {
@@ -98,7 +102,7 @@ describe('API route handlers', () => {
     });
 
     const response = await quarterlyObligationsPost(createPostRequest('http://localhost/api/quarterly', {
-      clientData: {}, nino: 'AB123456C', businessId: 'XBIS123', taxYear: '2018-19'
+      clientData: {}, nino: 'AB123456C', businessId: 'XBIS12345678901', taxYear: '2018-19'
     }));
 
     expect(response.status).toBe(401);
@@ -110,20 +114,26 @@ describe('API route handlers', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     const response = await quarterlyObligationsPost(createPostRequest('http://localhost/api/quarterly', {
-      clientData: {}, nino: 'AB123456C', businessId: 'XBIS123', taxYear: '2018-19'
+      clientData: {}, nino: 'AB123456C', businessId: 'XBIS12345678901', taxYear: '2018-19'
     }));
 
-    expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: 'network unavailable' });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({
+      error: 'Unable to retrieve quarterly obligations from HMRC. Please try again later.'
+    });
     consoleError.mockRestore();
   });
 
   it('preserves the status and response body returned by HMRC for business details', async () => {
-    const details = { businessId: 'XBIS123', tradingName: 'Example Design' };
+    const details = {
+      businessId: 'XBIS12345678901',
+      typeOfBusiness: 'self-employment',
+      tradingName: 'Example Design'
+    };
     vi.mocked(fetch).mockResolvedValueOnce(createHmrcResponse(details));
 
     const successResponse = await businessDetailsPost(createPostRequest('http://localhost/api/business-details', {
-      clientData: {}, nino: 'AB123456C', businessID: 'XBIS123'
+      clientData: {}, nino: 'AB123456C', businessID: 'XBIS12345678901'
     }));
     expect(successResponse.status).toBe(200);
     expect(await successResponse.json()).toEqual(details);
@@ -139,16 +149,19 @@ describe('API route handlers', () => {
       'X-CorrelationId': 'correlation-123'
     }));
     const errorResponse = await businessDetailsPost(createPostRequest('http://localhost/api/business-details', {
-      clientData: {}, nino: 'AB123456C', businessID: 'missing'
+      clientData: {}, nino: 'AB123456C', businessID: 'XBIS00000000000'
     }));
     expect(errorResponse.status).toBe(404);
-    expect(await errorResponse.json()).toEqual(hmrcError);
+    expect(await errorResponse.json()).toEqual({
+      error: hmrcError.message,
+      status: 404,
+      details: hmrcError
+    });
     expect(errorResponse.headers.get('X-CorrelationId')).toBe('correlation-123');
     expect(consoleError).toHaveBeenCalledWith('HMRC business details request failed', {
       status: 404,
       correlationId: 'correlation-123',
       code: 'MATCHING_RESOURCE_NOT_FOUND',
-      errorCodes: ['NOT_FOUND']
     });
     consoleError.mockRestore();
   });
@@ -158,7 +171,7 @@ describe('API route handlers', () => {
     vi.mocked(fetch).mockRejectedValueOnce(new Error('network unavailable'));
 
     const response = await businessDetailsPost(createPostRequest('http://localhost/api/business-details', {
-      clientData: {}, nino: 'AB123456C', businessID: 'XBIS123'
+      clientData: {}, nino: 'AB123456C', businessID: 'XBIS12345678901'
     }));
 
     expect(response.status).toBe(502);
@@ -167,7 +180,6 @@ describe('API route handlers', () => {
     });
     expect(consoleError).toHaveBeenCalledWith('HMRC business details request could not be completed', {
       errorName: 'Error',
-      errorMessage: 'network unavailable'
     });
     consoleError.mockRestore();
   });
@@ -180,7 +192,11 @@ describe('API route handlers', () => {
     }));
 
     expect(response.status).toBe(429);
-    expect(await response.json()).toEqual({ error: 'Rate limited', status: 429 });
+    expect(await response.json()).toEqual({
+      error: 'Rate limited',
+      status: 429,
+      details: { message: 'Rate limited' }
+    });
   });
 
   it('updates and reads the user database record', async () => {
