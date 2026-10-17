@@ -34,10 +34,8 @@ export async function buildFraudPreventionHeaders(client: FraudClientData, reque
     "Gov-Client-Browser-JS-User-Agent": client.browserUserAgent,
     "Gov-Client-Device-ID": client.deviceID,
     "Gov-Client-Multi-Factor": client.multiFactor,
-    ...(clientPublicIP ? {
-      "Gov-Client-Public-IP": clientPublicIP,
-      "Gov-Client-Public-IP-Timestamp": new Date().toISOString(),
-    } : {}),
+    "Gov-Client-Public-IP": clientPublicIP ?? "",
+    "Gov-Client-Public-IP-Timestamp": clientPublicIP ? new Date().toISOString() : "",
     "Gov-Client-Public-Port": client.publicPort ?? "",
     "Gov-Client-Screens": client.screens,
     "Gov-Client-Timezone": client.timezone,
