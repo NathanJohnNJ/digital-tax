@@ -38,7 +38,7 @@ The server helper adds:
 - `Gov-Vendor-Product-Name` and `Gov-Vendor-Version`, built from the configured application name.
 - `Gov-Vendor-Public-IP`, looked up by the server through an external IP service.
 
-Set and verify the related environment variables and proxy chain for the deployment. Do not infer the true network path from defaults or development values.
+Set and verify the related environment variables and proxy chain for the deployment. The server uses the first `x-forwarded-for` address only when running behind Vercel's trusted ingress, and validates it as an IP address; if it is invalid, the validated Vercel `x-real-ip` value is used as a fallback. Outside Vercel, client IP headers are not trusted. Do not infer the true network path from defaults or development values.
 
 <br></br>
 
