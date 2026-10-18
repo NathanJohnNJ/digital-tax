@@ -19,17 +19,13 @@ export default async function Page(){
   const session = await auth0.getSession();
   const userEmail = session?.user?.email?.toLowerCase();
 
-  if (
-    // Re-enable after production fraud-header validation is complete.
-    // process.env.NODE_ENV === 'production' ||
-    !userEmail || !allowedTestingEmails.includes(userEmail)
-  ) {
+  if (!userEmail || !allowedTestingEmails.includes(userEmail)) {
     redirect('/account');
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-3 bg-amber-75 w-full h-full border-2 border-amber-500 rounded-2xl transition-all duration-75 text-slate-700 overflow-y-scroll scrollbar-none">
-      <div className="flex flex-col items-center gap-6 p-8 w-full h-full bg-white rounded-xl shadow-xl">
+    <div className="flex flex-col items-center p-3 bg-amber-75 w-full h-full border-2 border-amber-500 rounded-2xl transition-all duration-75 text-slate-700 overflow-y-auto scrollbar-none">
+      <div className="flex shrink-0 flex-col items-center gap-6 p-8 w-full min-h-full bg-white rounded-xl shadow-xl">
         <h2 className="font-extrabold text-5xl">Fraud Header Test</h2>
         <p className="max-w-2xl text-center">
           Temporary production diagnostic. This sends the generated fraud-prevention headers to HMRC Sandbox for validation.
