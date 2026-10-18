@@ -40,7 +40,7 @@ function hmrcResponse(body: unknown, status: number) {
 describe('HMRC Sandbox support routes', () => {
   let createTestUserPost: typeof import('@/app/api/hmrc/applicationRestrictedAuth/createTestUser/route').POST;
   let fraudValidationPost: typeof import('@/app/api/hmrc/fraud/test/route').POST;
-  let ipDiagnosticsGet: typeof import('@/app/api/hmrc/fraud/ip-diagnostics/route').GET;
+  let ipDiagnosticsPost: typeof import('@/app/api/hmrc/fraud/ip-diagnostics/route').POST;
 
   beforeAll(async () => {
     vi.stubEnv('TESTING_ALLOWED_USER_EMAILS', 'sandbox-tester@example.com');
@@ -52,7 +52,7 @@ describe('HMRC Sandbox support routes', () => {
     ]);
     createTestUserPost = createUserRoute.POST;
     fraudValidationPost = fraudRoute.POST;
-    ipDiagnosticsGet = ipDiagnosticsRoute.GET;
+    ipDiagnosticsPost = ipDiagnosticsRoute.POST;
   });
 
   beforeEach(() => {
@@ -139,6 +139,14 @@ describe('HMRC Sandbox support routes', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(validationResult);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(
+      JSON.parse(Buffer.from(response.headers.get('X-Fraud-Prevention-Headers') ?? '', 'base64').toString('utf8')),
+    ).toEqual({
+      'Gov-Client-Public-IP': '198.51.100.25',
+      'Gov-Vendor-Public-IP': '203.0.113.10',
+      'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
+    });
     expect(fetch).toHaveBeenCalledWith(
       'https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate',
       expect.objectContaining({
@@ -170,13 +178,16 @@ describe('HMRC Sandbox support routes', () => {
       'Gov-Client-Public-IP': '198.51.100.25',
       'Gov-Vendor-Public-IP': '203.0.113.10',
       'Gov-Vendor-Forwarded': 'by=203.0.113.10&for=198.51.100.25',
+      'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
     } as Awaited<ReturnType<typeof buildFraudPreventionHeaders>>);
     vi.stubEnv('SERVER_PUBLIC_IP', '203.0.113.10');
     vi.stubEnv('WAF_PUBLIC_IP', '');
     vi.stubEnv('SERVER2_PUBLIC_IP', '');
     vi.mocked(fetch).mockResolvedValueOnce(Response.json({ ip: '203.0.113.11' }));
 
-    const response = await ipDiagnosticsGet(new NextRequest('https://example.test/api/ip-diagnostics'));
+    const response = await ipDiagnosticsPost(postRequest('https://example.test/api/ip-diagnostics', {
+      clientData: { connectionMethod: 'WEB_APP_VIA_SERVER' },
+    }));
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('no-store');

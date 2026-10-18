@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { buildClientPayload } from '@/client/fraud/clientData';
 
 type IpDiagnosticsResult = {
   application: {
@@ -105,8 +106,14 @@ export default function IpDiagnostics() {
     setBrowserIp(undefined);
 
     try {
+      const clientData = await buildClientPayload();
       const [serverResponse, browserLookup] = await Promise.all([
-        fetch('/api/hmrc/fraud/ip-diagnostics', { method: 'GET', cache: 'no-store' }),
+        fetch('/api/hmrc/fraud/ip-diagnostics', {
+          method: 'POST',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientData }),
+        }),
         lookupBrowserPublicIp(),
       ]);
       const diagnostics = await readResponse(serverResponse);
@@ -121,27 +128,28 @@ export default function IpDiagnostics() {
 
   return (
     <section className="w-full max-w-4xl rounded-xl border border-slate-300 bg-white p-6 shadow">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-bold">IP address diagnostics</h3>
-          <p className="mt-1 text-sm">
-            Compares the IP values used by the app with public IP lookup results. Visible only to allowlisted testers.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={runDiagnostics}
-          disabled={isLoading}
-          className="rounded-full bg-slate-800 px-4 py-2 text-white disabled:cursor-wait disabled:opacity-60"
-        >
-          {isLoading ? 'Checking IP addresses...' : 'Check IP addresses'}
-        </button>
-      </div>
+      <h3 className="text-xl font-bold">IP address diagnostics</h3>
+      <p className="mt-1 text-sm">
+        Compare the IP values used by the app with public IP lookup results. Visible only to allowlisted testers.
+      </p>
 
       {error && <p role="alert" className="mt-4 text-red-700">{error}</p>}
 
+      <button
+        type="button"
+        onClick={runDiagnostics}
+        disabled={isLoading}
+        className="mt-4 rounded-full bg-slate-800 px-4 py-2 text-white disabled:cursor-wait disabled:opacity-60"
+      >
+        {isLoading ? 'Checking IP addresses...' : 'Check IP addresses'}
+      </button>
+
       {result && browserIp && (
         <div className="mt-6 overflow-x-auto">
+          <h4 className="mb-2 text-lg font-semibold">IP address diagnostics</h4>
+          <p className="mb-3 text-sm">
+            Compares the IP values used by the app with public IP lookup results.
+          </p>
           <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-slate-300">
