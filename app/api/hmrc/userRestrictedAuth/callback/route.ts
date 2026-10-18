@@ -5,6 +5,13 @@ import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken'
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
+  console.log('[debug][callback] hit', {
+    host: req.headers.get('host'),
+    hasCode: req.nextUrl.searchParams.has('code'),
+    error: req.nextUrl.searchParams.get('error'),
+    hasAccessTokenCookie: cookieStore.has('access_token'),
+    redirectUri: process.env.HMRC_REDIRECT_URI,
+  });
   const code = req.nextUrl.searchParams.get('code');
   const authError = req.nextUrl.searchParams.get('error');
 
@@ -29,10 +36,13 @@ export async function GET(req: NextRequest) {
   if (baseUrl !== 'http://localhost:3000/'){
     baseUrl = "https://dt.njtd.xyz/"
   }
+  baseUrl = baseUrl.replace(/\/+$/, '');
+  console.log('[debug][callback] redirecting', { to: `${baseUrl}/account` });
   
   let token: string | undefined;
   if(!cookieStore.has('access_token')){ 
     const tokenResult = await requestUserAccessToken();
+    console.log('[debug][callback] token exchange', { ok: tokenResult.ok, status: tokenResult.ok ? 200 : tokenResult.status, body: tokenResult.ok ? undefined : tokenResult.body });
     if (!tokenResult.ok) {
       return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
     }
