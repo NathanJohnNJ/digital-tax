@@ -41,15 +41,6 @@ async function getVendorPublicIP(): Promise<string> {
 
 export async function buildFraudPreventionHeaders(client: FraudClientData, request: Request) {
   const clientPublicIP = getTrustedClientIp(request);
-  if (!clientPublicIP) {
-    console.error('Unable to resolve trusted client IP; refusing HMRC request', {
-      hasXRealIp: request.headers.has('x-real-ip'),
-      hasXVercelForwardedFor: request.headers.has('x-vercel-forwarded-for'),
-      hasXForwardedFor: request.headers.has('x-forwarded-for'),
-      onVercel: process.env.VERCEL === '1',
-    });
-    throw new Error('Unable to resolve a trusted client public IP');
-  }
   const vendorPublicIP = await getVendorPublicIP();
 
   return {
