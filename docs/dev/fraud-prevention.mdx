@@ -23,13 +23,15 @@
 - `Gov-Client-User-IDs`
 - `Gov-Client-Window-Size`
 
-The browser helper obtains screen, window, timezone, and user-agent details; it stores a device ID in local storage and requests client IP data from an external service. Some values can be empty or unavailable, so the generated header names alone do not prove that the values meet HMRC's current requirements.
+The browser helper obtains screen, window, timezone, and user-agent details and stores a device ID in local storage. The server derives the client public IP from the trusted incoming request; it does not trust a client-submitted IP value. Some browser values can be empty or unavailable, so the generated header names alone do not prove that the values meet HMRC's current requirements.
 
 <br></br>
 
 ---
 
 ### Vendor headers
+
+The server helper resolves `Gov-Client-Public-IP` from the trusted Vercel request IP using the same resolver shown in the IP diagnostics, and resolves `Gov-Vendor-Public-IP` from the server-side IP lookup (falling back only to a configured, valid server IP). If either address cannot be resolved, it fails the HMRC request instead of sending an empty IP header.
 
 The server helper adds:
 
