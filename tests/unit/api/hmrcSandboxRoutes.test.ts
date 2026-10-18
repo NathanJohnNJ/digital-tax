@@ -127,6 +127,11 @@ describe('HMRC Sandbox support routes', () => {
       message: 'All headers appear to be valid',
     };
     vi.mocked(fetch).mockResolvedValueOnce(hmrcResponse(validationResult, 200));
+    vi.mocked(buildFraudPreventionHeaders).mockResolvedValueOnce({
+      'Gov-Client-Public-IP': '198.51.100.25',
+      'Gov-Vendor-Public-IP': '203.0.113.10',
+      'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
+    } as Awaited<ReturnType<typeof buildFraudPreventionHeaders>>);
 
     const response = await fraudValidationPost(postRequest('http://localhost/api/fraud-test', {
       connectionMethod: 'WEB_APP_VIA_SERVER',
@@ -140,6 +145,8 @@ describe('HMRC Sandbox support routes', () => {
         method: 'GET',
         headers: expect.objectContaining({
           Accept: 'application/vnd.hmrc.1.0+json',
+          'Gov-Client-Public-IP': '198.51.100.25',
+          'Gov-Vendor-Public-IP': '203.0.113.10',
           'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
         }),
       }),

@@ -92,7 +92,26 @@ describe('trusted client IP', () => {
     expect(headers['Gov-Vendor-Forwarded']).toBe('by=192.0.2.10&for=198.51.100.25');
   });
 
-  it('omits the client IP header when no valid platform IP is available', async () => {
+  it('fails instead of returning headers without a trusted client IP', async () => {
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('SERVER_PUBLIC_IP', '192.0.2.10');
+    vi.stubEnv('WAF_PUBLIC_IP', '');
+    vi.stubEnv('SERVER2_PUBLIC_IP', '');
+    vi.stubEnv('APP_NAME', 'Digital Tax');
+    vi.stubEnv('LICENSE_KEY', 'test-license');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      Response.json({ ip: '192.0.2.20' }),
+    ));
+
+    await expect(buildFraudPreventionHeaders(
+      { publicIP: '203.0.113.50' },
+      new Request('https://example.test/api', {
+        headers: { 'x-forwarded-for': 'not-an-ip' },
+      }),
+    )).rejects.toThrow('Unable to resolve a trusted client public IP');
+  });
+
+  it('always sets both public IP headers from the diagnostic IP resolution sources', async () => {
     vi.stubEnv('VERCEL', '1');
     vi.stubEnv('SERVER_PUBLIC_IP', '192.0.2.10');
     vi.stubEnv('WAF_PUBLIC_IP', '');
@@ -104,14 +123,55 @@ describe('trusted client IP', () => {
     ));
 
     const headers = await buildFraudPreventionHeaders(
-      { publicIP: '203.0.113.50' },
+      {},
       new Request('https://example.test/api', {
-        headers: { 'x-forwarded-for': 'not-an-ip' },
+        headers: { 'x-forwarded-for': '198.51.100.25, 203.0.113.10' },
       }),
     );
 
-    expect(headers).not.toHaveProperty('Gov-Client-Public-IP');
-    expect(headers).not.toHaveProperty('Gov-Client-Public-IP-Timestamp');
-    expect(headers['Gov-Vendor-Forwarded']).toBe('');
+    expect(headers['Gov-Client-Public-IP']).toBe('198.51.100.25');
+    expect(headers['Gov-Vendor-Public-IP']).toBe('192.0.2.20');
+    expect(headers['Gov-Client-Public-IP']).not.toBe('');
+    expect(headers['Gov-Vendor-Public-IP']).not.toBe('');
+  });
+
+  it('uses a validated configured server IP when the vendor IP lookup fails', async () => {
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('SERVER_PUBLIC_IP', '192.0.2.10');
+    vi.stubEnv('WAF_PUBLIC_IP', '');
+    vi.stubEnv('SERVER2_PUBLIC_IP', '');
+    vi.stubEnv('APP_NAME', 'Digital Tax');
+    vi.stubEnv('LICENSE_KEY', 'test-license');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      Response.json({ error: 'unavailable' }, { status: 503 }),
+    ));
+
+    const headers = await buildFraudPreventionHeaders(
+      {},
+      new Request('https://example.test/api', {
+        headers: { 'x-forwarded-for': '198.51.100.25' },
+      }),
+    );
+
+    expect(headers['Gov-Vendor-Public-IP']).toBe('192.0.2.10');
+  });
+
+  it('fails instead of returning an empty vendor IP when lookup and fallback are invalid', async () => {
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('SERVER_PUBLIC_IP', 'not-an-ip');
+    vi.stubEnv('WAF_PUBLIC_IP', '');
+    vi.stubEnv('SERVER2_PUBLIC_IP', '');
+    vi.stubEnv('APP_NAME', 'Digital Tax');
+    vi.stubEnv('LICENSE_KEY', 'test-license');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      Response.json({ ip: 'not-an-ip' }),
+    ));
+
+    await expect(buildFraudPreventionHeaders(
+      {},
+      new Request('https://example.test/api', {
+        headers: { 'x-forwarded-for': '198.51.100.25' },
+      }),
+    )).rejects.toThrow('Unable to resolve a valid vendor public IP');
   });
 });
