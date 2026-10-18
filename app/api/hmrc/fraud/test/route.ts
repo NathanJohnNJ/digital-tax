@@ -70,7 +70,19 @@ export async function POST(req: NextRequest) {
         ...fraudPreventionHeaders
       },
     });
-    return forwardHmrcResponse(response, 'fraud-header validation');
+    const forwardedResponse = await forwardHmrcResponse(response, 'fraud-header validation');
+    const responseHeaders = new Headers(forwardedResponse.headers);
+    responseHeaders.set('Cache-Control', 'no-store');
+    responseHeaders.set(
+      'X-Fraud-Prevention-Headers',
+      Buffer.from(JSON.stringify(fraudPreventionHeaders)).toString('base64'),
+    );
+
+    return new Response(forwardedResponse.body, {
+      status: forwardedResponse.status,
+      statusText: forwardedResponse.statusText,
+      headers: responseHeaders,
+    });
   } catch (error) {
     console.error('HMRC fraud-header validation request could not be completed', {
       errorName: error instanceof Error ? error.name : 'UnknownError',
