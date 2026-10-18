@@ -10,7 +10,8 @@ import Link from 'next/link';
 import clsx from 'clsx';
 import { usePathname } from 'next/navigation';
 
-export default function NavLinks({ canAccessTesting = false }: { canAccessTesting?: boolean }) {
+// export default function NavLinks({ canAccessTesting = false }: { canAccessTesting?: boolean }) {
+  export default function NavLinks({ canAccessTesting = true }: { canAccessTesting?: boolean }) {
   const pathname = usePathname();
 
   return (
