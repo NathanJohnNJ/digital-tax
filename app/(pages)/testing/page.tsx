@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth0 } from '@/lib/auth0';
+import IpDiagnostics from '@/app/components/test/IpDiagnostics';
 import Test from '@/app/components/test/Test';
 
 const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS;
@@ -35,6 +36,7 @@ export default async function Page(){
           Only the HMRC feedback is displayed; the headers are not shown.
         </p>
         <Test />
+        <IpDiagnostics />
       </div>
     </div>
   )

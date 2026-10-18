@@ -40,16 +40,19 @@ function hmrcResponse(body: unknown, status: number) {
 describe('HMRC Sandbox support routes', () => {
   let createTestUserPost: typeof import('@/app/api/hmrc/applicationRestrictedAuth/createTestUser/route').POST;
   let fraudValidationPost: typeof import('@/app/api/hmrc/fraud/test/route').POST;
+  let ipDiagnosticsGet: typeof import('@/app/api/hmrc/fraud/ip-diagnostics/route').GET;
 
   beforeAll(async () => {
     vi.stubEnv('TESTING_ALLOWED_USER_EMAILS', 'sandbox-tester@example.com');
     vi.resetModules();
-    const [createUserRoute, fraudRoute] = await Promise.all([
+    const [createUserRoute, fraudRoute, ipDiagnosticsRoute] = await Promise.all([
       import('@/app/api/hmrc/applicationRestrictedAuth/createTestUser/route'),
       import('@/app/api/hmrc/fraud/test/route'),
+      import('@/app/api/hmrc/fraud/ip-diagnostics/route'),
     ]);
     createTestUserPost = createUserRoute.POST;
     fraudValidationPost = fraudRoute.POST;
+    ipDiagnosticsGet = ipDiagnosticsRoute.GET;
   });
 
   beforeEach(() => {
@@ -153,5 +156,38 @@ describe('HMRC Sandbox support routes', () => {
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({ error: 'Forbidden' });
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('returns app-derived and IP-API server values to allowlisted testers', async () => {
+    vi.mocked(buildFraudPreventionHeaders).mockResolvedValueOnce({
+      'Gov-Client-Public-IP': '198.51.100.25',
+      'Gov-Vendor-Public-IP': '203.0.113.10',
+      'Gov-Vendor-Forwarded': 'by=203.0.113.10&for=198.51.100.25',
+    } as Awaited<ReturnType<typeof buildFraudPreventionHeaders>>);
+    vi.stubEnv('SERVER_PUBLIC_IP', '203.0.113.10');
+    vi.stubEnv('WAF_PUBLIC_IP', '');
+    vi.stubEnv('SERVER2_PUBLIC_IP', '');
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ ip: '203.0.113.11' }));
+
+    const response = await ipDiagnosticsGet(new NextRequest('https://example.test/api/ip-diagnostics'));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(await response.json()).toEqual({
+      application: {
+        clientPublicIp: '198.51.100.25',
+        vendorPublicIp: '203.0.113.10',
+        vendorForwarded: 'by=203.0.113.10&for=198.51.100.25',
+        configuredServerIps: {
+          server: '203.0.113.10',
+          waf: null,
+          server2: null,
+        },
+      },
+      ipApi: {
+        serverPublicIp: '203.0.113.11',
+        serverError: null,
+      },
+    });
   });
 });
