@@ -1,11 +1,41 @@
 import { HMRC_CONFIG } from "@/config/hmrc";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
+import { auth0 } from '@/lib/auth0';
 import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPreventionHeaders";
 import { requestAppAccessToken } from '@/app/actions/requestAppAccessToken';
 import { forwardHmrcResponse } from '@/app/api/utils/forwardHmrcResponse';
+import { readJsonRecord } from '@/app/api/utils/hmrcValidation';
+
+const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS;
+const allowedTestingEmails = testingAllowedEmailsValue
+  ? testingAllowedEmailsValue
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  : [];
+
+if (process.env.NODE_ENV !== 'production' && testingAllowedEmailsValue === undefined) {
+  throw new Error('TESTING_ALLOWED_USER_EMAILS is required in non-production environments.');
+}
 
 export async function POST(req: NextRequest) {
+  const session = await auth0.getSession();
+  const userEmail = session?.user?.email?.toLowerCase();
+
+  if (
+    // Re-enable after production fraud-header validation is complete.
+    // process.env.NODE_ENV === 'production' ||
+    !userEmail || !allowedTestingEmails.includes(userEmail)
+  ) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const parsed = await readJsonRecord(req);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+
   const cookieStore = await cookies();
   let token: string | undefined;
 
@@ -30,15 +60,24 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Missing application access token" }, { status: 401 });
   }
   
-  const clientData = await req.json();
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
-  const response = await fetch(`${HMRC_CONFIG.testApiUrl}/test/fraud-prevention-headers/business-details-mtd/validation-feedback?connectionMethod=WEB_APP_VIA_SERVER`, {
-    method: "GET",
-    headers: {
-      "Accept": "application/vnd.hmrc.1.0+json",
-      "Authorization": `Bearer ${token}`,
-      ...fraudPreventionHeaders
-    },
-  });
-  return forwardHmrcResponse(response, 'fraud-header validation');
+  try {
+    const fraudPreventionHeaders = await buildFraudPreventionHeaders(parsed.value, req);
+    const response = await fetch(`${HMRC_CONFIG.testApiUrl}/test/fraud-prevention-headers/validate`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/vnd.hmrc.1.0+json",
+        "Authorization": `Bearer ${token}`,
+        ...fraudPreventionHeaders
+      },
+    });
+    return forwardHmrcResponse(response, 'fraud-header validation');
+  } catch (error) {
+    console.error('HMRC fraud-header validation request could not be completed', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    });
+    return NextResponse.json(
+      { error: 'Unable to validate fraud-prevention headers with HMRC. Please try again later.' },
+      { status: 502 },
+    );
+  }
 }

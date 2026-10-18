@@ -46,6 +46,6 @@ Set and verify the related environment variables and proxy chain for the deploym
 
 ### Validation and safeguards
 
-`POST /api/hmrc/fraud/test` sends the generated headers to HMRC's sandbox fraud-prevention validation endpoint. Use its feedback during integration, but treat it as a test of the submitted request, not a general compliance certification.
+`POST /api/hmrc/fraud/test` sends the generated headers to HMRC Sandbox's `GET /test/fraud-prevention-headers/validate` endpoint. It validates the fraud-prevention headers attached to that same request. Use its feedback during integration, but treat it as a test of the submitted request, not a general compliance certification.
 
 Before production, review the current HMRC fraud-prevention specification and each data source. In particular, replace the fixed user ID currently present in the browser helper with an appropriate per-user value, review IP collection and proxy trust, and ensure the required client information is collected accurately and transparently. Do not log or expose access tokens or unnecessary personal data.
