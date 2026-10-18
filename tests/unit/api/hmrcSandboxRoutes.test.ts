@@ -116,4 +116,42 @@ describe('HMRC Sandbox support routes', () => {
       body: JSON.stringify(errorBody),
     });
   });
+
+  it("sends generated fraud headers to HMRC's request validation endpoint", async () => {
+    const validationResult = {
+      specVersion: '3.1',
+      code: 'VALID_HEADERS',
+      message: 'All headers appear to be valid',
+    };
+    vi.mocked(fetch).mockResolvedValueOnce(hmrcResponse(validationResult, 200));
+
+    const response = await fraudValidationPost(postRequest('http://localhost/api/fraud-test', {
+      connectionMethod: 'WEB_APP_VIA_SERVER',
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(validationResult);
+    expect(fetch).toHaveBeenCalledWith(
+      'https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({
+          Accept: 'application/vnd.hmrc.1.0+json',
+          'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
+        }),
+      }),
+    );
+  });
+
+  it('does not call HMRC for a user outside the testing allowlist', async () => {
+    getSessionMock.mockResolvedValueOnce({ user: { email: 'other@example.com' } });
+
+    const response = await fraudValidationPost(postRequest('http://localhost/api/fraud-test', {
+      connectionMethod: 'WEB_APP_VIA_SERVER',
+    }));
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'Forbidden' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });
