@@ -3,7 +3,6 @@ import { buildVendorForwardedHeader } from './buildVendorForwarded';
 import { buildVendorLicenseIDs } from "./buildVendorLicenseIDs";
 import { percentEncode } from './percentEncode';
 import { buildVendorVersion } from "./buildVendorVersion";
-import { getTrustedClientIp } from './getTrustedClientIp';
 
 export type FraudClientData = any;
 
@@ -15,7 +14,6 @@ async function getVendorPublicIP(): Promise<string> {
     if (!response.ok) {
       throw new Error(`IP lookup failed with status ${response.status}`);
     }
-
     const body: unknown = await response.json();
     if (
       typeof body !== 'object'
@@ -40,16 +38,6 @@ async function getVendorPublicIP(): Promise<string> {
 }
 
 export async function buildFraudPreventionHeaders(client: FraudClientData, request: Request) {
-  const clientPublicIP = getTrustedClientIp(request);
-  if (!clientPublicIP) {
-    console.error('Unable to resolve trusted client IP; refusing HMRC request', {
-      hasXRealIp: request.headers.has('x-real-ip'),
-      hasXVercelForwardedFor: request.headers.has('x-vercel-forwarded-for'),
-      hasXForwardedFor: request.headers.has('x-forwarded-for'),
-      onVercel: process.env.VERCEL === '1',
-    });
-    throw new Error('Unable to resolve a trusted client public IP');
-  }
   const vendorPublicIP = await getVendorPublicIP();
 
   const headers = {
@@ -58,7 +46,7 @@ export async function buildFraudPreventionHeaders(client: FraudClientData, reque
     "Gov-Client-Browser-JS-User-Agent": client.browserUserAgent,
     "Gov-Client-Device-ID": client.deviceID,
     "Gov-Client-Multi-Factor": client.multiFactor,
-    "Gov-Client-Public-IP": clientPublicIP,
+    "Gov-Client-Public-IP": client.publicIP,
     "Gov-Client-Public-IP-Timestamp": new Date().toISOString(),
     "Gov-Client-Public-Port": client.publicPort ?? "",
     "Gov-Client-Screens": client.screens,
@@ -68,7 +56,7 @@ export async function buildFraudPreventionHeaders(client: FraudClientData, reque
 
     // SERVER HEADERS
     "Gov-Vendor-Forwarded": buildVendorForwardedHeader(
-      clientPublicIP,
+      client.publicIP,
       [
         process.env.SERVER_PUBLIC_IP!,      // first hop
         process.env.WAF_PUBLIC_IP!,         // optional
