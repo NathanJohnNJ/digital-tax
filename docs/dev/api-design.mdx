@@ -58,6 +58,7 @@ These routes call HMRC's test API. The annual summary route does not implement a
 
 - `POST /api/hmrc/applicationRestrictedAuth/createTestUser` requests an HMRC sandbox test user.
 - `POST /api/hmrc/fraud/test` forwards fraud-prevention headers to HMRC Sandbox's `GET /test/fraud-prevention-headers/validate` endpoint.
+- The `/testing` page and fraud/IP diagnostic routes are available only to allowlisted users in non-production environments; production requests are denied.
 - HMRC errors are returned with an error message and, where available, the upstream status. Network failures are handled by the route, but response shapes are not yet a versioned public contract.
 
 `app/api/hmrc/userRestrictedAuth/helper.ts` is shared route code, not an endpoint: only files named `route.ts` expose App Router routes.

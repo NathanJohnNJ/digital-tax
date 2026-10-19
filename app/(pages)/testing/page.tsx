@@ -11,6 +11,10 @@ const allowedTestingEmails = testingAllowedEmailsValue
       .filter(Boolean)
   : [];
 
+function isProductionEnvironment(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
 if (process.env.NODE_ENV !== 'production' && testingAllowedEmailsValue === undefined) {
   throw new Error('TESTING_ALLOWED_USER_EMAILS is required in non-production environments.');
 }
@@ -19,7 +23,7 @@ export default async function Page(){
   const session = await auth0.getSession();
   const userEmail = session?.user?.email?.toLowerCase();
 
-  if (!userEmail || !allowedTestingEmails.includes(userEmail)) {
+  if (isProductionEnvironment() || !userEmail || !allowedTestingEmails.includes(userEmail)) {
     redirect('/account');
   }
 
@@ -28,8 +32,7 @@ export default async function Page(){
       <div className="flex shrink-0 flex-col items-center gap-6 p-8 w-full min-h-full bg-white rounded-xl shadow-xl">
         <h2 className="font-extrabold text-5xl">Fraud Header Test</h2>
         <p className="max-w-2xl text-center">
-          Temporary production diagnostic. This sends the generated fraud-prevention headers to HMRC Sandbox for validation.
-          Only the HMRC feedback is displayed; the headers are not shown.
+          Non-production diagnostic for validating fraud-prevention headers against HMRC Sandbox.
         </p>
         <Test />
         <IpDiagnostics />

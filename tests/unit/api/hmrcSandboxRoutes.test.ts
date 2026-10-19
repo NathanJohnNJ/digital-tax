@@ -173,6 +173,19 @@ describe('HMRC Sandbox support routes', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it('blocks fraud diagnostics routes in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+
+    const fraudResponse = await fraudValidationPost(postRequest('http://localhost/api/fraud-test', {}));
+    const ipResponse = await ipDiagnosticsPost(postRequest('http://localhost/api/ip-diagnostics', {}));
+
+    expect(fraudResponse.status).toBe(403);
+    expect(ipResponse.status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(buildFraudPreventionHeaders).not.toHaveBeenCalled();
+    vi.stubEnv('NODE_ENV', 'test');
+  });
+
   it('returns app-derived and IP-API server values to allowlisted testers', async () => {
     vi.mocked(buildFraudPreventionHeaders).mockResolvedValueOnce({
       'Gov-Client-Public-IP': '198.51.100.25',

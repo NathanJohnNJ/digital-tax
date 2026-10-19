@@ -337,7 +337,6 @@ export async function forwardValidatedHmrcResponse(
       status: response.status,
       correlationId: correlationId ?? undefined,
       code,
-      debugBody: typeof body === 'string' ? body.slice(0, 1000) : JSON.stringify(body)?.slice(0, 1000),
     });
     return Response.json(
       {
@@ -352,7 +351,6 @@ export async function forwardValidatedHmrcResponse(
   if (response.status !== expectedStatus || !isValidResponse(body)) {
     console.error(`HMRC ${operation} returned an invalid success response`, {
       status: response.status,
-      debugBody: typeof body === 'string' ? body.slice(0, 1500) : JSON.stringify(body)?.slice(0, 1500),
       correlationId: correlationId ?? undefined,
     });
     return Response.json(
