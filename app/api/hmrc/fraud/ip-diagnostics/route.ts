@@ -3,7 +3,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth0 } from '@/lib/auth0';
 import { buildFraudPreventionHeaders } from '@/app/api/utils/buildFraudPreventionHeaders';
 import { isRecord, readJsonRecord } from '@/app/api/utils/hmrcValidation';
-import { canAccessTesting } from '@/app/utils/testingAccess';
+
+const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS;
+const allowedTestingEmails = testingAllowedEmailsValue
+  ? testingAllowedEmailsValue
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  : [];
+
+if (process.env.NODE_ENV !== 'production' && testingAllowedEmailsValue === undefined) {
+  throw new Error('TESTING_ALLOWED_USER_EMAILS is required in non-production environments.');
+}
 
 async function lookupPublicIp(): Promise<string | null> {
   const response = await fetch('https://api.ipify.org?format=json', {
@@ -29,8 +40,9 @@ async function lookupPublicIp(): Promise<string | null> {
 
 export async function POST(request: NextRequest) {
   const session = await auth0.getSession();
+  const userEmail = session?.user?.email?.toLowerCase();
 
-  if (!session || !canAccessTesting(session.user?.email)) {
+  if (!userEmail || !allowedTestingEmails.includes(userEmail)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

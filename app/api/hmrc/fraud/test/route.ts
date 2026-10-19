@@ -6,12 +6,28 @@ import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPrevention
 import { requestAppAccessToken } from '@/app/actions/requestAppAccessToken';
 import { forwardHmrcResponse } from '@/app/api/utils/forwardHmrcResponse';
 import { readJsonRecord } from '@/app/api/utils/hmrcValidation';
-import { canAccessTesting } from '@/app/utils/testingAccess';
+
+const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS;
+const allowedTestingEmails = testingAllowedEmailsValue
+  ? testingAllowedEmailsValue
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  : [];
+
+if (process.env.NODE_ENV !== 'production' && testingAllowedEmailsValue === undefined) {
+  throw new Error('TESTING_ALLOWED_USER_EMAILS is required in non-production environments.');
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth0.getSession();
+  const userEmail = session?.user?.email?.toLowerCase();
 
-  if (!session || !canAccessTesting(session.user?.email)) {
+  if (
+    // Re-enable after production fraud-header validation is complete.
+    // process.env.NODE_ENV === 'production' ||
+    !userEmail || !allowedTestingEmails.includes(userEmail)
+  ) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 

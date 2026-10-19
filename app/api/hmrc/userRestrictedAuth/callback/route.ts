@@ -29,7 +29,6 @@ export async function GET(req: NextRequest) {
   if (baseUrl !== 'http://localhost:3000/'){
     baseUrl = "https://dt.njtd.xyz/"
   }
-  baseUrl = baseUrl.replace(/\/+$/, '');
   
   let token: string | undefined;
   if(!cookieStore.has('access_token')){ 
@@ -58,3 +57,4 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.redirect(`${baseUrl}/account`);
 }
+
