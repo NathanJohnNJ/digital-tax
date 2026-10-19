@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   }
   
   try {
-    const fraudPreventionHeaders = await buildFraudPreventionHeaders(parsed.value, req);
+    const fraudPreventionHeaders = await buildFraudPreventionHeaders(parsed.value);
     const response = await fetch(`${HMRC_CONFIG.testApiUrl}/test/fraud-prevention-headers/validate`, {
       method: "GET",
       headers: {

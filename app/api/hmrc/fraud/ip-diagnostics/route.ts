@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const headers = await buildFraudPreventionHeaders(parsed.value.clientData, request);
+    const headers = await buildFraudPreventionHeaders(parsed.value.clientData);
 
     let serverIpApi: string | null = null;
     let serverIpApiError: string | null = null;
