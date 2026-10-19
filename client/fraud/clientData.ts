@@ -38,6 +38,32 @@ const getDeviceID = async () => {
   return existing;
 }
 
+const getClientPublicIP = async() => {
+  try {
+    const response = await fetch("https://api.ipify.org?format=json", {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!response.ok) {
+      throw new Error(`IP lookup failed with status ${response.status}`);
+    }
+    const body: unknown = await response.json();
+    if (
+      typeof body !== 'object'
+      || body === null
+      || !('ip' in body)
+      || typeof body.ip !== 'string'
+    ) {
+      throw new Error('IP lookup returned an invalid address');
+    }
+    return body.ip;
+  } catch (error) {
+    console.error('Unable to resolve vendor public IP', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    });
+    throw new Error('Unable to resolve a valid client public IP');
+  }
+}
+
 const getClientPublicPort = async (req: Request) => {
   try {
     const forwardedPort = req.headers.get("x-forwarded-port");
@@ -84,6 +110,7 @@ export function getLondonUtcOffset(date = new Date()) {
 }
 
 export async function buildClientPayload(){
+  const publicIP = await getClientPublicIP();
   const publicPort = await getClientPublicPort(new Request(window.location.href));
   const deviceID = await getDeviceID();
   const screenDetails = await getScreenDetails();
@@ -100,6 +127,7 @@ export async function buildClientPayload(){
     browserUserAgent: userAgent,
     deviceID,
     multiFactor,
+    publicIP,
     publicPort,
     screens: `width=${screenDetails.width}&height=${screenDetails.height}&scaling-factor=${screenDetails.scalingFactor}&colour-depth=${screenDetails.colourDepth}`,
     timezone,
