@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth0 } from '@/lib/auth0';
+import CreateTestUser from '@/app/components/test/createTestUser';
+import GetServices from '@/app/components/test/getServices';
 import IpDiagnostics from '@/app/components/test/IpDiagnostics';
 import Test from '@/app/components/test/Test';
 
@@ -33,6 +35,12 @@ export default async function Page(){
         </p>
         <Test />
         <IpDiagnostics />
+	
+	<h2 className="font-extrabold text-5xl">Testing Resources</h2>
+      	<div className="flex mt-6 p-6 h-full w-full items-center justify-center">
+        	<GetServices />
+        	<CreateTestUser />
+      	</div>
       </div>
     </div>
   )

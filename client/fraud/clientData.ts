@@ -14,6 +14,19 @@ const getScreenDetails = async () => {
   };
 };
 
+const getPublicIPDetails = async () => {
+  try {
+    const res = await fetch('https://api.ipinfo.io/lite/me?token=7e7e36035b6a40');
+    const utcDate = new Date().toISOString();
+    const data = await res.json();
+    const ip = data.ip;
+
+    return { ip, date: utcDate };
+  } catch (err) {
+    console.error("Failed to fetch IP:", err);
+  }
+};
+
 function generateUUID(): string {
   // RFC4122 v4 UUID
   return crypto.randomUUID
@@ -86,6 +99,7 @@ export function getLondonUtcOffset(date = new Date()) {
 export async function buildClientPayload(){
   const publicPort = await getClientPublicPort(new Request(window.location.href));
   const deviceID = await getDeviceID();
+  const publicIPDetails = await getPublicIPDetails();
   const screenDetails = await getScreenDetails();
 
   const userAgent = navigator.userAgent;
@@ -100,6 +114,8 @@ export async function buildClientPayload(){
     browserUserAgent: userAgent,
     deviceID,
     multiFactor,
+    publicIP: publicIPDetails?.ip,
+    publicIPTimestamp: publicIPDetails?.date,
     publicPort,
     screens: `width=${screenDetails.width}&height=${screenDetails.height}&scaling-factor=${screenDetails.scalingFactor}&colour-depth=${screenDetails.colourDepth}`,
     timezone,

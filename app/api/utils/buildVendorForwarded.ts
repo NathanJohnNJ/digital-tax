@@ -3,11 +3,11 @@ import { percentEncode } from "./percentEncode";
 /**
  * Build the Gov-Vendor-Forwarded header according to HMRC rules.
  *
- * @param clientPublicIP - The trusted public IP of the client, resolved by the server
+ * @param clientPublicIP - The public IP of the client (from browser)
  * @param hops - Array of public IPs representing each hop in order
  */
 export function buildVendorForwardedHeader(
-  clientPublicIP: string | undefined,
+  clientPublicIP: string,
   hops: string[]
 ): string {
   if (!clientPublicIP || hops.length === 0) {

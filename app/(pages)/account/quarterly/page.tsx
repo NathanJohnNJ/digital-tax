@@ -5,7 +5,7 @@ export default async function Page({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const { nino, businessId, startDate, endDate } = (await searchParams);
+  const { nino, businessId, startDate, endDate, incomeTransfer } = (await searchParams);
   const firstValue = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
 
   return (
@@ -17,6 +17,7 @@ export default async function Page({
           businessId={firstValue(businessId)}
           startDate={firstValue(startDate)}
           endDate={firstValue(endDate)}
+          incomeTransfer={firstValue(incomeTransfer) === '1'}
         />
       </div>
     </div>

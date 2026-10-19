@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, request);
+    const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
     const cookieStore = await cookies();
     const hasAccessToken = cookieStore.has('access_token');
     let token = hasAccessToken ? cookieStore.get('access_token')?.value : undefined;

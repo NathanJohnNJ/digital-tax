@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Cumulative updates must start at the beginning of the tax year' }, { status: 400 });
   }
 
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, request);
+  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
   const cookieStore = await cookies();
   let token = cookieStore.get('access_token')?.value;
 
