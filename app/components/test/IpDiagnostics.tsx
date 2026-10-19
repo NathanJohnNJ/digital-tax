@@ -130,7 +130,7 @@ export default function IpDiagnostics() {
     <section className="w-full max-w-4xl rounded-xl border border-slate-300 bg-white p-6 shadow">
       <h3 className="text-xl font-bold">IP address diagnostics</h3>
       <p className="mt-1 text-sm">
-        Compare the IP values used by the app with public IP lookup results. Visible only to allowlisted testers.
+        Compare the IP values used by the app with public IP lookup results. Available to signed-in users.
       </p>
 
       {error && <p role="alert" className="mt-4 text-red-700">{error}</p>}

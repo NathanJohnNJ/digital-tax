@@ -173,16 +173,34 @@ describe('HMRC Sandbox support routes', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('blocks fraud diagnostics routes in production', async () => {
+  it('allows signed-in users to run fraud diagnostics in production', async () => {
     vi.stubEnv('NODE_ENV', 'production');
+    getSessionMock.mockResolvedValueOnce({ user: { email: 'other@example.com' } });
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(hmrcResponse({ code: 'VALID_HEADERS' }, 200))
+      .mockResolvedValueOnce(Response.json({ ip: '203.0.113.11' }));
 
     const fraudResponse = await fraudValidationPost(postRequest('http://localhost/api/fraud-test', {}));
-    const ipResponse = await ipDiagnosticsPost(postRequest('http://localhost/api/ip-diagnostics', {}));
+    getSessionMock.mockResolvedValueOnce({ user: { email: 'other@example.com' } });
+    const ipResponse = await ipDiagnosticsPost(postRequest('http://localhost/api/ip-diagnostics', {
+      clientData: {},
+    }));
 
-    expect(fraudResponse.status).toBe(403);
-    expect(ipResponse.status).toBe(403);
+    expect(fraudResponse.status).toBe(200);
+    expect(ipResponse.status).toBe(200);
+    expect(buildFraudPreventionHeaders).toHaveBeenCalledTimes(2);
+    vi.stubEnv('NODE_ENV', 'test');
+  });
+
+  it('denies unauthenticated users in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    getSessionMock.mockResolvedValueOnce(null);
+
+    const response = await fraudValidationPost(postRequest('http://localhost/api/fraud-test', {}));
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'Forbidden' });
     expect(fetch).not.toHaveBeenCalled();
-    expect(buildFraudPreventionHeaders).not.toHaveBeenCalled();
     vi.stubEnv('NODE_ENV', 'test');
   });
 
