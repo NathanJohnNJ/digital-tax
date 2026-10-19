@@ -1,44 +1,32 @@
-import { isIP } from 'node:net';
 import { buildVendorForwardedHeader } from './buildVendorForwarded';
 import { buildVendorLicenseIDs } from "./buildVendorLicenseIDs";
 import { percentEncode } from './percentEncode';
 import { buildVendorVersion } from "./buildVendorVersion";
+import { getTrustedClientIp } from './getTrustedClientIp';
 
 export type FraudClientData = any;
 
-async function getVendorPublicIP(): Promise<string> {
-  try {
-    const response = await fetch("https://api.ipify.org?format=json", {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!response.ok) {
-      throw new Error(`IP lookup failed with status ${response.status}`);
-    }
-    const body: unknown = await response.json();
-    if (
-      typeof body !== 'object'
-      || body === null
-      || !('ip' in body)
-      || typeof body.ip !== 'string'
-      || !isIP(body.ip)
-    ) {
-      throw new Error('IP lookup returned an invalid address');
-    }
-    return body.ip;
-  } catch (error) {
-    console.error('Unable to resolve vendor public IP', {
-      errorName: error instanceof Error ? error.name : 'UnknownError',
-    });
-    const configuredServerIP = process.env.SERVER_PUBLIC_IP?.trim();
-    if (configuredServerIP && isIP(configuredServerIP)) {
-      return configuredServerIP;
-    }
-    throw new Error('Unable to resolve a valid vendor public IP');
-  }
-}
-
 export async function buildFraudPreventionHeaders(client: FraudClientData, request: Request) {
-  const vendorPublicIP = await getVendorPublicIP();
+  async function getPublicIP(){
+    try {
+      const response = await fetch("https://api.ipify.org?format=json", { signal: AbortSignal.timeout(3000) });
+      const { ip } = await response.json();
+      return ip as string;
+    } catch (error) {
+      console.error('Unable to resolve vendor public IP', error instanceof Error ? error.name : error);
+      return process.env.SERVER_PUBLIC_IP ?? "";
+    }
+  }
+
+  const clientPublicIP = getTrustedClientIp(request);
+  if (!clientPublicIP && process.env.NODE_ENV === 'production') {
+    console.error('Unable to resolve trusted client IP; omitting HMRC client IP headers', {
+      hasXRealIp: request.headers.has('x-real-ip'),
+      hasXVercelForwardedFor: request.headers.has('x-vercel-forwarded-for'),
+      hasXForwardedFor: request.headers.has('x-forwarded-for'),
+      onVercel: process.env.VERCEL === '1',
+    });
+  }
 
   return {
     // CLIENT HEADERS
@@ -46,8 +34,10 @@ export async function buildFraudPreventionHeaders(client: FraudClientData, reque
     "Gov-Client-Browser-JS-User-Agent": client.browserUserAgent,
     "Gov-Client-Device-ID": client.deviceID,
     "Gov-Client-Multi-Factor": client.multiFactor,
-    "Gov-Client-Public-IP": client.publicIP,
-    "Gov-Client-Public-IP-Timestamp": new Date().toISOString(),
+    ...(clientPublicIP ? {
+      "Gov-Client-Public-IP": clientPublicIP,
+      "Gov-Client-Public-IP-Timestamp": new Date().toISOString(),
+    } : {}),
     "Gov-Client-Public-Port": client.publicPort ?? "",
     "Gov-Client-Screens": client.screens,
     "Gov-Client-Timezone": client.timezone,
@@ -56,7 +46,7 @@ export async function buildFraudPreventionHeaders(client: FraudClientData, reque
 
     // SERVER HEADERS
     "Gov-Vendor-Forwarded": buildVendorForwardedHeader(
-      client.publicIP,
+      clientPublicIP,
       [
         process.env.SERVER_PUBLIC_IP!,      // first hop
         process.env.WAF_PUBLIC_IP!,         // optional
@@ -70,7 +60,7 @@ export async function buildFraudPreventionHeaders(client: FraudClientData, reque
       }
     ]),
     "Gov-Vendor-Product-Name": percentEncode(process.env.APP_NAME!),
-    "Gov-Vendor-Public-IP": vendorPublicIP,
+    "Gov-Vendor-Public-IP": await getPublicIP(),
     "Gov-Vendor-Version": buildVendorVersion(process.env.APP_NAME!),
   };
 }
