@@ -12,6 +12,10 @@ const allowedTestingEmails = testingAllowedEmailsValue
       .filter(Boolean)
   : [];
 
+function isProductionEnvironment(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
 if (process.env.NODE_ENV !== 'production' && testingAllowedEmailsValue === undefined) {
   throw new Error('TESTING_ALLOWED_USER_EMAILS is required in non-production environments.');
 }
@@ -42,7 +46,7 @@ export async function POST(request: NextRequest) {
   const session = await auth0.getSession();
   const userEmail = session?.user?.email?.toLowerCase();
 
-  if (!userEmail || !allowedTestingEmails.includes(userEmail)) {
+  if (isProductionEnvironment() || !userEmail || !allowedTestingEmails.includes(userEmail)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

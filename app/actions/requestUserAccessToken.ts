@@ -28,12 +28,6 @@ function isTokenPayload(value: unknown): value is TokenPayload {
 export async function requestUserAccessToken(scopes?: any): Promise<TokenRequestResult> {
   const cookieStore = await cookies();
   const code = cookieStore.get('code')?.value;
-  console.log('[debug][requestUserAccessToken]', {
-    hasCode: Boolean(code),
-    clientId: HMRC_CONFIG.clientId ? 'set' : 'MISSING',
-    clientSecret: HMRC_CONFIG.clientSecret ? 'set' : 'MISSING',
-    redirectUri: HMRC_CONFIG.redirectUri,
-  });
   if(!code){
     return { ok: false, status: 400, body: { error: "Missing authorization code" } };
   }

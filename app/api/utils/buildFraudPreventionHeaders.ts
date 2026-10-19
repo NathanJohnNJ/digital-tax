@@ -40,7 +40,7 @@ async function getVendorPublicIP(): Promise<string> {
 export async function buildFraudPreventionHeaders(client: FraudClientData, request: Request) {
   const vendorPublicIP = await getVendorPublicIP();
 
-  const headers = {
+  return {
     // CLIENT HEADERS
     "Gov-Client-Connection-Method": client.connectionMethod,
     "Gov-Client-Browser-JS-User-Agent": client.browserUserAgent,
@@ -73,16 +73,4 @@ export async function buildFraudPreventionHeaders(client: FraudClientData, reque
     "Gov-Vendor-Public-IP": vendorPublicIP,
     "Gov-Vendor-Version": buildVendorVersion(process.env.APP_NAME!),
   };
-
-  const problems = Object.entries(headers)
-    .filter(([, v]) => v === undefined || v === null || v === '' || v === 'undefined' || /[^\x20-\x7E]/.test(String(v)))
-    .map(([k, v]) => `${k}=${v === '' ? '<EMPTY>' : /[^\x20-\x7E]/.test(String(v)) ? '<NON-ASCII>' : String(v)}`);
-  console.log('[debug][fraud-headers]', {
-    clientKeysReceived: Object.keys(client ?? {}),
-    clientPublicIP: clientPublicIP ?? null,
-    onVercel: process.env.VERCEL === '1',
-    problemHeaders: problems,
-  });
-
-  return headers;
 }

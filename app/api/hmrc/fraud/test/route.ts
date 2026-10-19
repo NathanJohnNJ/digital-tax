@@ -15,6 +15,10 @@ const allowedTestingEmails = testingAllowedEmailsValue
       .filter(Boolean)
   : [];
 
+function isProductionEnvironment(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
 if (process.env.NODE_ENV !== 'production' && testingAllowedEmailsValue === undefined) {
   throw new Error('TESTING_ALLOWED_USER_EMAILS is required in non-production environments.');
 }
@@ -23,11 +27,7 @@ export async function POST(req: NextRequest) {
   const session = await auth0.getSession();
   const userEmail = session?.user?.email?.toLowerCase();
 
-  if (
-    // Re-enable after production fraud-header validation is complete.
-    // process.env.NODE_ENV === 'production' ||
-    !userEmail || !allowedTestingEmails.includes(userEmail)
-  ) {
+  if (isProductionEnvironment() || !userEmail || !allowedTestingEmails.includes(userEmail)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
