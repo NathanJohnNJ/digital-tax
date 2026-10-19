@@ -1,116 +1,90 @@
-import { HMRC_CONFIG } from "@/config/hmrc";
-import { NextRequest, NextResponse } from "next/server";
-import { cookies } from 'next/headers';
-import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPreventionHeaders";
 import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
+import { HMRC_CONFIG } from '@/config/hmrc';
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+import { buildFraudPreventionHeaders } from '../../../utils/buildFraudPreventionHeaders';
+import {
+  forwardValidatedHmrcResponse,
+  isBusinessDetailsResponse,
+  isRecord,
+  isValidBusinessId,
+  isValidNino,
+  readJsonRecord,
+} from '../../../utils/hmrcValidation';
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-export async function POST(req: NextRequest) {
-  let input: unknown;
-  try {
-    input = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 });
+export async function POST(request: NextRequest) {
+  const parsed = await readJsonRecord(request);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  if (!isRecord(input)) {
-    return NextResponse.json({ error: 'Request body must be a JSON object' }, { status: 400 });
+  const { clientData, nino, businessID } = parsed.value;
+  if (!isValidNino(nino)) {
+    return NextResponse.json({ error: 'A valid National Insurance number is required' }, { status: 400 });
   }
-
-  const { clientData, nino, businessID } = input;
-  if (typeof nino !== 'string' || !nino.trim() || typeof businessID !== 'string' || !businessID.trim()) {
-    return NextResponse.json({ error: 'National Insurance number and business ID are required' }, { status: 400 });
+  if (!isValidBusinessId(businessID)) {
+    return NextResponse.json({ error: 'A valid business ID is required' }, { status: 400 });
   }
-
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
-  const cookieStore = await cookies();
-
-  let token: string | undefined;
-  if(!cookieStore.has('access_token')){ 
-    const tokenResult = await requestUserAccessToken();
-    if (!tokenResult.ok) {
-      return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
-    }
-
-    const options = {
-      httpOnly: true,
-      maxAge: tokenResult.tokens.expires_in,
-      secure: process.env.NODE_ENV === "production"
-    };
-    cookieStore.set('access_token', tokenResult.tokens.access_token, options);
-    if (tokenResult.tokens.refresh_token) {
-      cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
-    }
-    token = tokenResult.tokens.access_token;
-  } else {
-    token = cookieStore.get('access_token')?.value;
+  if (!isRecord(clientData)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data must be a JSON object' }, { status: 400 });
   }
-
-  if (!token) {
-    return Response.json({ error: "Missing access token" }, { status: 401 });
-  }
-
-  const requestUrl = `${HMRC_CONFIG.testApiUrl}/individuals/business/details/${encodeURIComponent(nino)}/${encodeURIComponent(businessID)}`;
-  const requestHeaders = {
-    "Accept": "application/vnd.hmrc.2.0+json",
-    "Authorization": `Bearer ${token}`,
-    ...fraudPreventionHeaders
-  };
 
   try {
-    const businessRequest = await fetch(requestUrl, {
-      method: "GET",
-      headers: requestHeaders,
-    });
+    const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
+    const cookieStore = await cookies();
+    const hasAccessToken = cookieStore.has('access_token');
+    let token = hasAccessToken ? cookieStore.get('access_token')?.value : undefined;
 
-    const businessResponseText = await businessRequest.text();
-    const correlationId = businessRequest.headers.get('X-CorrelationId');
-
-    if (!businessRequest.ok) {
-      let errorDetails: unknown;
-      try {
-        errorDetails = JSON.parse(businessResponseText);
-      } catch {
-        errorDetails = undefined;
+    if (!token && !hasAccessToken) {
+      const tokenResult = await requestUserAccessToken();
+      if (!tokenResult.ok) {
+        return NextResponse.json({ error: 'HMRC authorisation is required' }, { status: tokenResult.status });
       }
-      const errorRecord = isRecord(errorDetails) ? errorDetails : undefined;
-      const errorCodes = errorRecord && Array.isArray(errorRecord.errors)
-        ? errorRecord.errors.flatMap((detail) => isRecord(detail) && typeof detail.code === 'string' ? [detail.code] : [])
-        : [];
 
-      console.error('HMRC business details request failed', {
-        status: businessRequest.status,
-        correlationId: correlationId ?? undefined,
-        code: errorRecord && typeof errorRecord.code === 'string' ? errorRecord.code : undefined,
-        errorCodes,
-      });
-
+      token = tokenResult.tokens.access_token;
+      const options = {
+        httpOnly: true,
+        maxAge: tokenResult.tokens.expires_in,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+      };
+      cookieStore.set('access_token', token, options);
+      if (tokenResult.tokens.refresh_token) {
+        cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
+      }
     }
 
-    return new Response(businessResponseText || null, {
-      status: businessRequest.status,
-      headers: {
-        'Content-Type': businessRequest.headers.get('content-type') ?? 'application/json',
-        ...(correlationId ? { 'X-CorrelationId': correlationId } : {}),
-      },
-    });
-  } catch (err){
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    const safeErrorMessage = [nino, businessID]
-      .filter(Boolean)
-      .reduce((message, identifier) => message.replaceAll(identifier, '[redacted]'), errorMessage);
-    console.error('HMRC business details request could not be completed', {
-      errorName: err instanceof Error ? err.name : 'UnknownError',
-      errorMessage: safeErrorMessage,
-    });
+    if (!token) {
+      return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
+    }
 
+    const hmrcResponse = await fetch(
+      `${HMRC_CONFIG.testApiUrl}/individuals/business/details/${encodeURIComponent(nino)}/${encodeURIComponent(businessID)}`,
+      {
+        method: 'GET',
+        headers: {
+          Accept: 'application/vnd.hmrc.2.0+json',
+          Authorization: `Bearer ${token}`,
+          ...fraudPreventionHeaders,
+        },
+      },
+    );
+
+    return forwardValidatedHmrcResponse(
+      hmrcResponse,
+      'business details request',
+      (responseBody) => isBusinessDetailsResponse(responseBody)
+        && responseBody.businessId.toUpperCase() === businessID.toUpperCase(),
+      [nino, businessID],
+    );
+  } catch (error) {
+    console.error('HMRC business details request could not be completed', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    });
     return NextResponse.json(
       { error: 'Unable to retrieve business details from HMRC. Please try again later.' },
       { status: 502 },
     );
   }
-
 }

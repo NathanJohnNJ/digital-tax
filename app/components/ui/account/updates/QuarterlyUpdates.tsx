@@ -1,15 +1,21 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type SyntheticEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { buildClientPayload } from '@/client/fraud/clientData';
 import IndividualTaxCalculation from '@/app/components/ui/account/IndividualTaxCalculation';
 import SelfAssessmentTaxCalculations from '@/app/components/ui/account/SelfAssessmentTaxCalculations';
+import {
+  incomeTransferStorageKey,
+  parseQuarterlyIncomeTransfer,
+} from '@/app/components/ui/account/incomeTransfer';
 
 type QuarterlyUpdatesProps = {
   nino?: string;
   businessId?: string;
   startDate?: string;
   endDate?: string;
+  incomeTransfer?: boolean;
 };
 
 type IncomeField = 'turnover' | 'other' | 'taxTakenOffTradingIncome';
@@ -111,7 +117,9 @@ function MoneyInput({
   );
 }
 
-export default function QuarterlyUpdates({ nino, businessId, startDate, endDate }: QuarterlyUpdatesProps) {
+export default function QuarterlyUpdates({ nino, businessId, startDate, endDate, incomeTransfer = false }: QuarterlyUpdatesProps) {
+  const { replace } = useRouter();
+  const incomeTransferRead = useRef(false);
   const [income, setIncome] = useState<Record<IncomeField, string>>({
     turnover: '0.00',
     other: '0.00',
@@ -126,6 +134,8 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
   const [disallowableExpenses, setDisallowableExpenses] = useState<Record<DisallowableExpenseField, string>>(
     Object.fromEntries(expenseFields.map(({ name }) => [`${name}Disallowable`, '0.00'])) as Record<DisallowableExpenseField, string>,
   );
+  const [showDisallowableExpenses, setShowDisallowableExpenses] = useState(false);
+  const [incomeTransferApplied, setIncomeTransferApplied] = useState(false);
   const [confirmedThreshold, setConfirmedThreshold] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string }>();
@@ -145,6 +155,44 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
     - (supportsTaxTakenOffTradingIncome ? Number(income.taxTakenOffTradingIncome) || 0 : 0);
   const canSubmit = validPeriod && validIdentity && !submitting && (expenseMode !== 'consolidated' || confirmedThreshold);
   const netProfit = incomeTotal - expenseTotal;
+
+  useEffect(() => {
+    if (!incomeTransfer || incomeTransferRead.current) return;
+    incomeTransferRead.current = true;
+
+    let raw: string | null;
+    try {
+      raw = window.sessionStorage.getItem(incomeTransferStorageKey);
+      window.sessionStorage.removeItem(incomeTransferStorageKey);
+    } catch {
+      setMessage({ kind: 'error', text: 'The prepared income figures could not be read from browser storage.' });
+      return;
+    }
+
+    if (!raw) {
+      setMessage({ kind: 'error', text: 'The prepared income figures were not found. Return to the income page and try again.' });
+      return;
+    }
+
+    const transfer = parseQuarterlyIncomeTransfer(raw);
+    if (!transfer) {
+      setMessage({ kind: 'error', text: 'The prepared income figures were invalid. Return to the income page and try again.' });
+      return;
+    }
+
+    setIncome(transfer.income);
+    setExpenseMode(transfer.mode);
+    setConsolidatedExpenses(transfer.consolidatedExpenses);
+    setConsolidatedDisallowableExpenses(transfer.consolidatedDisallowableExpenses);
+    setExpenses(transfer.expenses);
+    setDisallowableExpenses(transfer.disallowableExpenses);
+    setShowDisallowableExpenses(transfer.mode === 'itemised');
+    setIncomeTransferApplied(true);
+
+    const query = new URLSearchParams(window.location.search);
+    query.delete('incomeTransfer');
+    replace(`/account/quarterly${query.size > 0 ? `?${query.toString()}` : ''}`);
+  }, [incomeTransfer, replace]);
 
   function updateIncome(field: IncomeField, value: string) {
     setIncome((current) => ({ ...current, [field]: value }));
@@ -209,7 +257,7 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
     }
   }
 
-  if (!validPeriod || !nino || !businessId) {
+  if ((!validPeriod || !nino || !businessId) && !incomeTransfer && !incomeTransferApplied) {
     return (
       <div className="border-2 border-blue-400 bg-linear-to-tr from-gray-200 to-40% to-gray-50 shadow-md rounded-2xl p-4 mt-6">
         <p className="text-center text-gray-700">
@@ -223,19 +271,30 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
     <>
       <div className="border-2 border-blue-400 bg-linear-to-tr from-gray-200 to-40% to-gray-50 shadow-2xl rounded-2xl p-4 mt-6 flex flex-col w-full">
         <div className="mb-5 border-b border-sky-100 pb-4">
-          <h2 className="font-extrabold text-2xl text-center">Review Update Period</h2>
-          <dl className="mx-auto mt-4 grid max-w-2xl grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-sm sm:text-base">
-            <dt className="font-semibold text-gray-700">Period</dt>
-            <dd>{displayDate(startDate)} to {displayDate(endDate)}</dd>
-            <dt className="font-semibold text-gray-700">Tax year</dt>
-            <dd>{taxYear}</dd>
-            <dt className="font-semibold text-gray-700">Business ID</dt>
-            <dd className="break-all">{businessId}</dd>
-          </dl>
-          {isCumulative && taxYear && (
-            <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-700">
-              For {taxYear} HMRC requires cumulative totals. Enter figures from the start of the tax year through {displayDate(endDate)}; this submission covers {displayDate(getTaxYearStartDate(taxYear))} to {displayDate(endDate)}.
-            </p>
+          {validPeriod && startDate && endDate && taxYear ? (
+            <>
+              <h2 className="font-extrabold text-2xl text-center">Review Update Period</h2>
+              <dl className="mx-auto mt-4 grid max-w-2xl grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-sm sm:text-base">
+                <dt className="font-semibold text-gray-700">Period</dt>
+                <dd>{displayDate(startDate)} to {displayDate(endDate)}</dd>
+                <dt className="font-semibold text-gray-700">Tax year</dt>
+                <dd>{taxYear}</dd>
+                <dt className="font-semibold text-gray-700">Business ID</dt>
+                <dd className="break-all">{businessId ?? 'Not selected'}</dd>
+              </dl>
+              {isCumulative && (
+                <p className="mx-auto mt-4 max-w-2xl text-sm text-gray-700">
+                  For {taxYear} HMRC requires cumulative totals. Enter figures from the start of the tax year through {displayDate(endDate)}; this submission covers {displayDate(getTaxYearStartDate(taxYear))} to {displayDate(endDate)}.
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <h2 className="font-extrabold text-2xl text-center">Figures transferred from Income</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-amber-800">
+                Select a business and quarterly reporting period from your obligations before submitting these figures.
+              </p>
+            </>
           )}
         </div>
 
@@ -288,7 +347,11 @@ export default function QuarterlyUpdates({ nino, businessId, startDate, endDate 
                 ))}
                   <MoneyInput label="Total expenses" value={String(expenseTotal.toFixed(2))} disabled/>
               </div>
-              <details className="mt-4 border-t border-sky-100 pt-3">
+              <details
+                className="mt-4 border-t border-sky-100 pt-3"
+                open={showDisallowableExpenses}
+                onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setShowDisallowableExpenses(event.currentTarget.open)}
+              >
                 <summary className="cursor-pointer font-semibold text-gray-700">Disallowable expenses</summary>
                 <p className="my-3 text-sm text-gray-600">Enter the part of each expense category that is not allowable for tax. Leave categories at zero when not applicable.</p>
                 <div className="grid gap-4 sm:grid-cols-2">

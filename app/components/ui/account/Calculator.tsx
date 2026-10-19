@@ -15,8 +15,7 @@ import {
 type CalculatorField = { name: string; label: string };
 
 export default function Calculator(){
-  const { income, expense, disallowableExpense, updateRow, addRow, removeRow } = useCalculatorState();
-  const [visible, setVisible] = useState(false);
+  const { income, expense, disallowableExpense, showCalculators, setShowCalculators, markCalculatorUsed, updateRow, addRow, removeRow } = useCalculatorState();
   const [expandedTables, setExpandedTables] = useState<Record<AmountKind, boolean>>({
     income: false,
     expense: false,
@@ -53,7 +52,10 @@ export default function Calculator(){
                 min="0"
                 step="0.01"
                 value={row.value}
-                onChange={(event) => updateRow(kind, index, event.target.value)}
+                onChange={(event) => {
+                  markCalculatorUsed();
+                  updateRow(kind, index, event.target.value);
+                }}
                 onBlur={(event) => updateRow(kind, index, (Number(event.target.value) || 0).toFixed(2))}
                 className="number-no-spinner w-full rounded-lg border border-gray-400/50 bg-white px-2 py-1 text-right text-sm"
               />
@@ -108,8 +110,8 @@ export default function Calculator(){
 
   return (
     <div className="flex flex-col items-center">
-      <button type="button" onClick={() => setVisible((current) => !current)} className="w-fit border-2 border-blue-500 rounded-xl px-3 py-1 mb-4 hover:scale-105 shadow-sm hover:shadow-lg font-medium">{visible ? 'Hide calculators' : 'Show calculators'}</button>
-      {visible && <div className="grid w-full items-start gap-4 grid-flow-col md:grid-cols-2 2xl:grid-cols-3 grid-rows-5">
+      <button type="button" onClick={() => setShowCalculators(!showCalculators)} className="w-fit border-2 border-blue-500 rounded-xl px-3 py-1 mb-4 hover:scale-105 shadow-sm hover:shadow-lg font-medium">{showCalculators ? 'Hide Calculators' : 'Show Calculators'}</button>
+      {showCalculators && <div className="grid w-full items-start gap-4 grid-flow-col md:grid-cols-2 2xl:grid-cols-3 grid-rows-5">
         {table('Income', 'income', income, incomeFields)}
         {table('Disallowable Expenses', 'disallowable', disallowableExpense, disallowableExpenseFields)}
         {table('Expenses', 'expense', expense, expenseFields)}

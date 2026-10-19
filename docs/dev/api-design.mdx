@@ -33,9 +33,10 @@ These are POST routes that receive request data from the app and call correspond
 - `/api/hmrc/userRestrictedAuth/retrieveSelfAssessmentTaxCalculation`
 - `/api/hmrc/userRestrictedAuth/individualTaxCalculation`
 
-The route handlers validate some identifiers, attach authentication and fraud-prevention headers, and return parsed HMRC responses. Their upstream HMRC methods, paths, and API versions are defined in the individual route files.
+The route handlers validate request JSON, NINOs, business IDs, tax years, and calculation identifiers before calling HMRC. Successful HMRC responses are checked against the required response fields for Business Details v2.0, Obligations v3.0, and Individual Calculations v9.0; malformed success responses produce a safe `502` response. HMRC error status codes are preserved, with error codes and messages returned after removing request identifiers and credentials. Server logs contain status, correlation ID, and error codes only, not upstream response bodies or customer data.
 The quarterly update history route treats the documented Sandbox `MATCHING_RESOURCE_NOT_FOUND` summary/detail responses as no data and `NO_OBLIGATIONS_FOUND` as an empty obligations list. Other unsuccessful summary, obligations, or period-detail responses preserve HMRC's status and error details instead of returning partial history.
 The calculation-list route calls the Sandbox Individual Calculations v9.0 endpoint `GET /individuals/calculations/{nino}/self-assessment/{taxYear}` with `Accept: application/vnd.hmrc.9.0+json`. HMRC's optional `calculationType` query filter is omitted when listing all calculations.
+The API versions currently used by the HMRC routes, their Sandbox status, and the pre-release changelog review procedure are tracked in [`api-versions.md`](../../api-versions.md).
 
 <br></br>
 
@@ -56,7 +57,7 @@ These routes call HMRC's test API. The annual summary route does not implement a
 ### Test and error behavior
 
 - `POST /api/hmrc/applicationRestrictedAuth/createTestUser` requests an HMRC sandbox test user.
-- `POST /api/hmrc/fraud/test` forwards fraud-prevention headers to HMRC's validation endpoint.
+- `POST /api/hmrc/fraud/test` forwards fraud-prevention headers to HMRC Sandbox's `GET /test/fraud-prevention-headers/validate` endpoint.
 - HMRC errors are returned with an error message and, where available, the upstream status. Network failures are handled by the route, but response shapes are not yet a versioned public contract.
 
 `app/api/hmrc/userRestrictedAuth/helper.ts` is shared route code, not an endpoint: only files named `route.ts` expose App Router routes.

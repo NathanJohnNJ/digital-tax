@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
   if (!token) return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
 
   try {
-    const fraudHeaders = await buildFraudPreventionHeaders(clientData, request);
+    const fraudHeaders = await buildFraudPreventionHeaders(clientData);
     const apiHeaders = {
       Authorization: `Bearer ${token}`,
       ...fraudHeaders,

@@ -23,13 +23,15 @@
 - `Gov-Client-User-IDs`
 - `Gov-Client-Window-Size`
 
-The browser helper obtains screen, window, timezone, and user-agent details; it stores a device ID in local storage and requests client IP data from an external service. Some values can be empty or unavailable, so the generated header names alone do not prove that the values meet HMRC's current requirements.
+The browser helper obtains screen, window, timezone, and user-agent details and stores a device ID in local storage. The server derives the client public IP from the trusted incoming request; it does not trust a client-submitted IP value. Some browser values can be empty or unavailable, so the generated header names alone do not prove that the values meet HMRC's current requirements.
 
 <br></br>
 
 ---
 
 ### Vendor headers
+
+The server helper resolves `Gov-Client-Public-IP` from the trusted Vercel request IP using the same resolver shown in the IP diagnostics, and resolves `Gov-Vendor-Public-IP` from the server-side IP lookup (falling back only to a configured, valid server IP). If either address cannot be resolved, it fails the HMRC request instead of sending an empty IP header.
 
 The server helper adds:
 
@@ -46,6 +48,6 @@ Set and verify the related environment variables and proxy chain for the deploym
 
 ### Validation and safeguards
 
-`POST /api/hmrc/fraud/test` sends the generated headers to HMRC's sandbox fraud-prevention validation endpoint. Use its feedback during integration, but treat it as a test of the submitted request, not a general compliance certification.
+`POST /api/hmrc/fraud/test` sends the generated headers to HMRC Sandbox's `GET /test/fraud-prevention-headers/validate` endpoint. It validates the fraud-prevention headers attached to that same request. Use its feedback during integration, but treat it as a test of the submitted request, not a general compliance certification.
 
 Before production, review the current HMRC fraud-prevention specification and each data source. In particular, replace the fixed user ID currently present in the browser helper with an appropriate per-user value, review IP collection and proxy trust, and ensure the required client information is collected accurately and transparently. Do not log or expose access tokens or unnecessary personal data.

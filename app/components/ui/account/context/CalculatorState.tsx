@@ -45,6 +45,10 @@ type CalculatorState = {
   incomeTotal: string;
   expenseTotal: string;
   disallowableExpenseTotal: string;
+  showCalculators: boolean;
+  calculatorUsed: boolean;
+  setShowCalculators: (visible: boolean) => void;
+  markCalculatorUsed: () => void;
   updateRow: (kind: AmountKind, index: number, value: string) => void;
   addRow: (kind: AmountKind, field: string) => void;
   removeRow: (kind: AmountKind, index: number) => void;
@@ -67,6 +71,12 @@ export function CalculatorStateProvider({ children }: { children: React.ReactNod
   const [incomeTotal, setIncomeTotal] = useState('0.00');
   const [expenseTotal, setExpenseTotal] = useState('0.00');
   const [disallowableExpenseTotal, setDisallowableExpenseTotal] = useState('0.00');
+  const [showCalculators, setShowCalculators] = useState(false);
+  const [calculatorUsed, setCalculatorUsed] = useState(false);
+
+  function markCalculatorUsed() {
+    setCalculatorUsed(true);
+  }
 
   function updateRow(kind: AmountKind, index: number, value: string) {
     const setRows = kind === 'income' ? setIncome : kind === 'expense' ? setExpense : setDisallowableExpense;
@@ -111,6 +121,10 @@ export function CalculatorStateProvider({ children }: { children: React.ReactNod
       incomeTotal,
       expenseTotal,
       disallowableExpenseTotal,
+      showCalculators,
+      calculatorUsed,
+      setShowCalculators,
+      markCalculatorUsed,
       updateRow,
       addRow,
       removeRow,
