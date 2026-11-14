@@ -6,7 +6,8 @@ import {
   DocumentCurrencyPoundIcon,
   CalendarDaysIcon,
   SquaresPlusIcon,
-  BriefcaseIcon
+  BriefcaseIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -16,6 +17,7 @@ const links = [
   { name: 'Account Home', href: '/account', icon: HomeIcon },
   { name: 'Business Overview', href: '/account/business-overview', icon: BriefcaseIcon},
   { name: 'Income/Expendature', href: '/account/income', icon: DocumentCurrencyPoundIcon },
+  { name: 'Import records', href: '/account/records/import', icon: ArrowUpTrayIcon },
   { name: 'Quarterly Updates', href: '/account/quarterly', icon: SquaresPlusIcon },
   { name: 'End of Year Tax Return', href: '/account/taxReturn', icon: CalendarDaysIcon }
 ];
@@ -35,6 +37,7 @@ export default function NavLinks() {
           <Link
             key={link.name}
             href={href}
+            aria-label={link.name}
             className={clsx(
               'flex h-12 grow items-center justify-center gap-2 rounded-t-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-50 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3 z-0',
               {

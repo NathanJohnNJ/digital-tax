@@ -10,7 +10,7 @@ export default async function Page(){
         <div className="p-6 max-w-5xl">
           <h3 className="font-bold text-2xl -mt-2 mb-1">Introduction</h3>
           <p className="ml-2">
-            These Terms and Conditions (“Terms”) govern your use of the Digital Tax web application (“Digital Tax”, “the App”), provided by NJTD (“we”, “us”, “our”). By accessing or using Digital Tax, available at <Link className="cursor-pointer font-semibold text-slate-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-slate-600" href="https://dt.njtd.xyz">https://dt.njtd.xyz</Link>, you agree to be bound by these Terms. If you do not agree, you must not use the App.
+            These Terms and Conditions (“Terms”) govern your use of the Digital Tax web application (“Digital Tax”, “the App”), provided by NJTD (“we”, “us”, “our”). By accessing or using Digital Tax, available at <Link className="cursor-pointer font-semibold text-slate-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-slate-600" href="https://tax.njtd.xyz">https://tax.njtd.xyz</Link>, you agree to be bound by these Terms. If you do not agree, you must not use the App.
           </p>
           <p className="ml-2">
             Digital Tax is developed and maintained by Nathan John trading as NJTD. Our main website is <Link className="cursor-pointer font-semibold text-slate-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-slate-600" href="https://njtd.xyz">https://njtd.xyz</Link>.
@@ -47,7 +47,7 @@ export default async function Page(){
             Digital Tax processes certain personal data as part of providing its services. Authentication data is processed by Auth0, and account-related data is stored in Supabase. We do not store any tax or employment details retrieved from HMRC. The only HMRC-related personal identifier stored by us is your National Insurance number, which is linked to your user account solely to enable the App to retrieve and display your self-employment information from HMRC.
           </p>
           <p className="ml-2">
-            Full details of how your data is processed, stored, and protected are provided in our separate <Link className="cursor-pointer font-semibold text-slate-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-slate-600" href="https://dt.njtd.xyz/privacy" target="_blank" rel="noreferrer">Privacy Policy</Link>.
+            Full details of how your data is processed, stored, and protected are provided in our separate <Link className="cursor-pointer font-semibold text-slate-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-slate-600" href="https://tax.njtd.xyz/privacy" target="_blank" rel="noreferrer">Privacy Policy</Link>.
           </p>
           <h3 className="font-bold text-2xl mt-4 mb-1">Acceptable Use</h3>
           <p className="ml-2">You agree not to use Digital Tax for any unlawful, harmful, or abusive purpose, including but not limited to:</p>

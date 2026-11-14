@@ -9,7 +9,7 @@ export default async function Page() {
 
         <div className="pt-6 max-w-5xl">
           <p className="ml-2">
-            This Cookie Policy explains how NJTD uses cookies and similar technologies on the Digital Tax web application at <Link className="cursor-pointer font-semibold text-slate-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-slate-600" href="https://dt.njtd.xyz">https://dt.njtd.xyz</Link>. It explains what cookies are, why we use them, and how you can control them.
+            This Cookie Policy explains how NJTD uses cookies and similar technologies on the Digital Tax web application at <Link className="cursor-pointer font-semibold text-slate-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-slate-600" href="https://tax.njtd.xyz">https://tax.njtd.xyz</Link>. It explains what cookies are, why we use them, and how you can control them.
           </p>
 
           <h3 className="font-bold text-2xl mt-6 mb-1">What are cookies?</h3>
@@ -57,7 +57,7 @@ export default async function Page() {
 
           <h3 className="font-bold text-2xl mt-6 mb-1">How to opt out of analytics</h3>
           <p className="ml-2">
-            If we use analytics cookies, we will provide a clear opt-in mechanism. If you have previously consented and wish to opt out, use the cookie controls in the App or clear cookies for <strong>dt.njtd.xyz</strong> in your browser.
+            If we use analytics cookies, we will provide a clear opt-in mechanism. If you have previously consented and wish to opt out, use the cookie controls in the App or clear cookies for <strong>tax.njtd.xyz</strong> in your browser.
           </p>
 
           <h3 className="font-bold text-2xl mt-6 mb-1">Changes to this Cookie Policy</h3>

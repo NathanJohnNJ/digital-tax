@@ -1,16 +1,11 @@
 import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cookieStore } = vi.hoisted(() => ({
-  cookieStore: {
-    get: vi.fn(),
-  },
-}));
+import { getCurrentHmrcAccessToken } from '../../../lib/hmrcTokens';
 
-vi.mock('next/headers', () => ({ cookies: vi.fn() }));
-vi.mock('@/app/actions/requestUserAccessToken', () => ({
-  requestUserAccessToken: vi.fn(),
+vi.mock('../../../lib/hmrcTokens', () => ({
+  getCurrentHmrcAccessToken: vi.fn(),
+  markCurrentHmrcAuthorizationRequired: vi.fn(),
 }));
 vi.mock('@/app/api/utils/buildFraudPreventionHeaders', () => ({
   buildFraudPreventionHeaders: vi.fn().mockResolvedValue({
@@ -61,8 +56,10 @@ describe('quarterly update history upstream outcomes', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    cookieStore.get.mockReturnValue({ value: 'sandbox-access-token' });
-    vi.mocked(cookies).mockResolvedValue(cookieStore as unknown as Awaited<ReturnType<typeof cookies>>);
+    vi.mocked(getCurrentHmrcAccessToken).mockResolvedValue({
+      ok: true,
+      accessToken: 'sandbox-access-token',
+    });
     vi.stubGlobal('fetch', vi.fn());
     ({ POST: post } = await import('@/app/api/hmrc/userRestrictedAuth/quarterlyUpdateHistory/route'));
   });

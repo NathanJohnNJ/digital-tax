@@ -9,21 +9,33 @@ import { POST as calculationListPost } from '../../../app/api/hmrc/userRestricte
 import { POST as calculationRetrievePost } from '../../../app/api/hmrc/userRestrictedAuth/retrieveSelfAssessmentTaxCalculation/route';
 import { POST as calculationTriggerPost } from '../../../app/api/hmrc/userRestrictedAuth/individualTaxCalculation/route';
 import { buildFraudPreventionHeaders } from '../../../app/api/utils/buildFraudPreventionHeaders';
+import {
+  getCurrentHmrcAccessToken,
+  markCurrentHmrcAuthorizationRequired,
+} from '../../../lib/hmrcTokens';
 
-const { cookieStore } = vi.hoisted(() => ({
+const { cookieStore, poolQueryMock } = vi.hoisted(() => ({
   cookieStore: {
     has: vi.fn(),
     get: vi.fn(),
     set: vi.fn(),
   },
+  poolQueryMock: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({ cookies: vi.fn() }));
-vi.mock('../../../app/actions/requestUserAccessToken', () => ({ requestUserAccessToken: vi.fn() }));
+vi.mock('../../../lib/db', () => ({ pool: { query: poolQueryMock } }));
+vi.mock('../../../lib/appUser', () => ({
+  getAuthenticatedAppUser: vi.fn().mockResolvedValue({ id: '123' }),
+}));
 vi.mock('../../../app/api/utils/buildFraudPreventionHeaders', () => ({
   buildFraudPreventionHeaders: vi.fn().mockResolvedValue({
     'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
   }),
+}));
+vi.mock('../../../lib/hmrcTokens', () => ({
+  getCurrentHmrcAccessToken: vi.fn(),
+  markCurrentHmrcAuthorizationRequired: vi.fn(),
 }));
 
 const nino = 'AB123456C';
@@ -51,9 +63,17 @@ function body(overrides: Record<string, unknown> = {}) {
 
 describe('business, obligation, and calculation route contract validation', () => {
   beforeEach(() => {
-    cookieStore.has.mockReturnValue(true);
-    cookieStore.get.mockReturnValue({ value: 'test-access-token' });
+    vi.mocked(getCurrentHmrcAccessToken).mockResolvedValue({
+      ok: true,
+      accessToken: 'test-access-token',
+    });
+    vi.mocked(markCurrentHmrcAuthorizationRequired).mockResolvedValue(undefined);
     vi.mocked(cookies).mockResolvedValue(cookieStore as unknown as Awaited<ReturnType<typeof cookies>>);
+    poolQueryMock.mockImplementation(async (query: string) =>
+      query.includes('SELECT ni_number')
+        ? { rows: [{ ni_number: nino }] }
+        : { rows: [] },
+    );
     vi.stubGlobal('fetch', vi.fn());
   });
 
@@ -76,6 +96,22 @@ describe('business, obligation, and calculation route contract validation', () =
       taxYear: '2025-27',
     })));
     expect(badInputResponse.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects client-supplied network and identity fraud-header values at the route boundary', async () => {
+    const response = await businessListPost(postRequest(body({
+      clientData: {
+        connectionMethod: 'WEB_APP_VIA_SERVER',
+        publicIP: '198.51.100.25',
+        publicIPTimestamp: '2000-01-01T00:00:00.000Z',
+        publicPort: '443',
+        userIds: 'Digital%20Tax=forged-user',
+      },
+    })));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Client fraud-prevention data is invalid' });
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -235,5 +271,17 @@ describe('business, obligation, and calculation route contract validation', () =
       code: 'INVALID_REQUEST',
     });
     expect(buildFraudPreventionHeaders).toHaveBeenCalled();
+  });
+
+  it('marks HMRC authorization for relinking when HMRC returns 401', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(hmrcResponse({
+      code: 'UNAUTHORIZED',
+      message: 'Access token is invalid',
+    }, 401));
+
+    const response = await businessListPost(postRequest(body()));
+
+    expect(response.status).toBe(401);
+    expect(markCurrentHmrcAuthorizationRequired).toHaveBeenCalledOnce();
   });
 });

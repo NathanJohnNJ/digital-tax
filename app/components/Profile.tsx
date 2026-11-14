@@ -17,14 +17,13 @@ function getInitials(name?: string | null, email?: string | null): string {
   return "U";
 }
 
-export default function Profile(props: React.ComponentProps<any>) {
+export default function Profile({ hmrcConnected }: { hmrcConnected: boolean }) {
   const [ shown, setShown ] = useState(false);
   const [ entered, setEntered ] = useState(false);
   const [ nino, setNino ] = useState("");
   const [ businessList, setBusinessList ] = useState<any>(null);
   const { user, isLoading } = useUser();
-  const { accessToken } = props;
-  const connected = accessToken ? true : false;
+  const connected = hmrcConnected;
 
   function touchHandler(){
     setShown(true);
@@ -33,20 +32,22 @@ export default function Profile(props: React.ComponentProps<any>) {
     }, 3000);
   }
 
-  async function NIHandler(nextNino: string, authSub?: string){
+  async function NIHandler(nextNino: string){
     const regex = /^[A-Z]{2}\d{6}[A-Z]$/;
-    if (!authSub || !regex.test(nextNino)) {
+    if (!regex.test(nextNino)) {
       return;
     }
 
-    setEntered(true);
-    await fetch('/api/db', {
+    const saveResponse = await fetch('/api/db', {
       method: 'POST',
-      body: JSON.stringify({
-        nino: nextNino,
-        sub: authSub
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nino: nextNino }),
     });
+    if (!saveResponse.ok) {
+      console.error('Unable to save the National Insurance number', await saveResponse.text());
+      return;
+    }
+    setEntered(true);
 
     const clientData = await buildClientPayload();
     const businessResponse = await fetch('/api/hmrc/userRestrictedAuth/businessList', {
@@ -57,20 +58,21 @@ export default function Profile(props: React.ComponentProps<any>) {
     if(businessResponse.ok){
       setBusinessList(businessData);
     }
-    console.log(businessData);
   }
 
   useEffect(() => {
-    const authSub = user?.sub;
-    if (!authSub) {
+    if (!user?.sub) {
       return;
     }
 
     async function checkForNino(){
       try {
-        const response = await fetch(`/api/db?id=${authSub}`, {
+        const response = await fetch('/api/db', {
           method: 'GET'
         });
+        if (!response.ok) {
+          throw new Error(`Account lookup failed with status ${response.status}`);
+        }
         const userDetails = await response.json();
         const nextNino = userDetails?.ni_number ?? "";
 
@@ -78,21 +80,24 @@ export default function Profile(props: React.ComponentProps<any>) {
         setEntered(Boolean(nextNino));
 
         if (nextNino) {
-          await NIHandler(nextNino, authSub);
+          await NIHandler(nextNino);
         }
       } catch (error) {
-        console.log(error);
+        console.error('Unable to load account details', error);
       }
     }
 
     async function addCookiesPreferences(){
       try{
-        const cookiesResponse = await fetch(`/api/cookies?id=${authSub}`, {
+        const cookiesResponse = await fetch('/api/cookies', {
           method: 'GET'
         });
+        if (!cookiesResponse.ok) {
+          throw new Error(`Cookie preferences lookup failed with status ${cookiesResponse.status}`);
+        }
         return cookiesResponse;
       } catch(error){
-        console.log(error);
+        console.error('Unable to load cookie preferences', error);
       }
     }
 
@@ -118,7 +123,13 @@ export default function Profile(props: React.ComponentProps<any>) {
         </div>
         <div className="flex items-center">
           <div className="flex items-center">
-            <img width="160" height="160" loading="eager" src={user.picture} className="min-h-40 min-w-40 -ml-2" alt="User avatar" />
+            { user.picture?
+              <img width="160" height="160" loading="eager" src={user.picture} className="min-h-40 min-w-40 -ml-2" alt="User avatar" />
+              :
+              <span className="w-40 h-40 bg-linear-to-b from-[#2d2d42] to-[#161620] rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0">
+                {getInitials(user.name, user.email)}
+              </span>
+            }
           </div>
 
           <div className="flex flex-col gap-0.5 justify-content-between items-center">
@@ -159,7 +170,7 @@ export default function Profile(props: React.ComponentProps<any>) {
                 <input id="nino" name="nino" className="bg-white/90 rounded-lg pl-3 font-light" disabled={entered} placeholder="AA000000A" value={nino} onChange={e=>setNino(e.target.value)} />
                 <button
                   className="w-7 h-7 bg-gray-500 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0"
-                  onClick={() => NIHandler(nino, user?.sub)}
+                  onClick={() => NIHandler(nino)}
                 >
                   <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
                     <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

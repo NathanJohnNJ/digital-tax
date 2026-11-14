@@ -1,18 +1,11 @@
 import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cookieStore } = vi.hoisted(() => ({
-  cookieStore: {
-    has: vi.fn(),
-    get: vi.fn(),
-    set: vi.fn(),
-  },
-}));
+import { getCurrentHmrcAccessToken } from '../../../lib/hmrcTokens';
 
-vi.mock('next/headers', () => ({ cookies: vi.fn() }));
-vi.mock('@/app/actions/requestUserAccessToken', () => ({
-  requestUserAccessToken: vi.fn(),
+vi.mock('../../../lib/hmrcTokens', () => ({
+  getCurrentHmrcAccessToken: vi.fn(),
+  markCurrentHmrcAuthorizationRequired: vi.fn(),
 }));
 vi.mock('@/app/api/utils/buildFraudPreventionHeaders', () => ({
   buildFraudPreventionHeaders: vi.fn().mockResolvedValue({
@@ -46,9 +39,10 @@ describe('quarterly update income schema by tax year', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    cookieStore.has.mockReturnValue(true);
-    cookieStore.get.mockReturnValue({ value: 'sandbox-access-token' });
-    vi.mocked(cookies).mockResolvedValue(cookieStore as unknown as Awaited<ReturnType<typeof cookies>>);
+    vi.mocked(getCurrentHmrcAccessToken).mockResolvedValue({
+      ok: true,
+      accessToken: 'sandbox-access-token',
+    });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ periodId: '2022-04-06_2023-04-05' }), {
         status: 200,

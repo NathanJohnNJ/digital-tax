@@ -9,7 +9,7 @@ export default async function Page() {
 
         <div className="pt-6 max-w-5xl">
           <p className="ml-2">
-            This Privacy Policy explains how NJTD (developer: <strong>Nathan John</strong>) collects, uses, stores, and shares personal data when you use the Digital Tax web application (“Digital Tax”, “the App”) available at <Link className="cursor-pointer font-semibold text-neutral-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-neutral-600" href="https://dt.njtd.xyz">https://dt.njtd.xyz</Link>. It also explains your rights under UK data protection law.
+            This Privacy Policy explains how NJTD (developer: <strong>Nathan John</strong>) collects, uses, stores, and shares personal data when you use the Digital Tax web application (“Digital Tax”, “the App”) available at <Link className="cursor-pointer font-semibold text-neutral-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-neutral-600" href="https://tax.njtd.xyz">https://tax.njtd.xyz</Link>. It also explains your rights under UK data protection law.
           </p>
 
           <h3 className="font-bold text-2xl mt-6 mb-1">Controller</h3>

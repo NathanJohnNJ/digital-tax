@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1390" height="200" viewBox="0 0 1390 200" role="img" aria-labelledby="title desc">
+  <title id="title">Example foreign-property spreadsheet</title>
+  <desc id="desc">One French rental receipt in euros, showing the original amount, exchange rate, rate date and source, GBP amount and country code.</desc>
+  <rect width="1390" height="200" fill="#f3f5f8"/>
+  <text x="20" y="27" font-family="Arial,sans-serif" font-size="17" font-weight="bold" fill="#243044">Illustration: foreign-property spreadsheet (one row)</text>
+  <rect x="20" y="45" width="1350" height="116" fill="#fff" stroke="#aab3c0"/>
+  <rect x="20" y="45" width="1350" height="38" fill="#e9eef5"/>
+  <rect x="20" y="83" width="1350" height="38" fill="#dcebe1"/>
+  <path d="M55 45V161 M185 45V161 M295 45V161 M415 45V161 M545 45V161 M695 45V161 M810 45V161 M925 45V161 M1060 45V161 M1200 45V161 M20 83H1370 M20 121H1370" stroke="#aab3c0"/>
+  <g font-family="Arial,sans-serif" font-size="12" fill="#273446">
+    <text x="65" y="69">A</text><text x="195" y="69">B</text><text x="305" y="69">C</text><text x="425" y="69">D</text><text x="555" y="69">E</text><text x="705" y="69">F</text><text x="820" y="69">G</text><text x="935" y="69">H</text><text x="1070" y="69">I</text><text x="1210" y="69">J</text>
+    <text x="30" y="107">1</text><text x="60" y="107">recordDate</text><text x="190" y="107">recordType</text><text x="300" y="107">category</text><text x="420" y="107">sourceAmount</text><text x="550" y="107">sourceCurrency</text><text x="700" y="107">amountGbp</text><text x="815" y="107">exchangeRate</text><text x="930" y="107">exchangeRateDate</text><text x="1065" y="107">exchangeRateSource</text><text x="1205" y="101">foreignProperty</text><text x="1205" y="115">CountryCode</text>
+    <text x="30" y="146">2</text><text x="60" y="146">2026-04-08</text><text x="190" y="146">income</text><text x="300" y="146">rentIncome</text><text x="420" y="146">100.00</text><text x="550" y="146">EUR</text><text x="700" y="146">85.00</text><text x="815" y="146">0.85</text><text x="930" y="146">2026-04-08</text><text x="1065" y="146">Bank statement</text><text x="1205" y="146">FRA</text>
+  </g>
+</svg>

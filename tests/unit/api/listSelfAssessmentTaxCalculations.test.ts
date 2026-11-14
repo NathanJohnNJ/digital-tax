@@ -1,18 +1,10 @@
 import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getCurrentHmrcAccessToken } from '../../../lib/hmrcTokens';
 
-const { cookieStore } = vi.hoisted(() => ({
-  cookieStore: {
-    has: vi.fn(),
-    get: vi.fn(),
-    set: vi.fn(),
-  },
-}));
-
-vi.mock('next/headers', () => ({ cookies: vi.fn() }));
-vi.mock('../../../app/actions/requestUserAccessToken', () => ({
-  requestUserAccessToken: vi.fn(),
+vi.mock('../../../lib/hmrcTokens', () => ({
+  getCurrentHmrcAccessToken: vi.fn(),
+  markCurrentHmrcAuthorizationRequired: vi.fn(),
 }));
 vi.mock('../../../app/api/utils/buildFraudPreventionHeaders', () => ({
   buildFraudPreventionHeaders: vi.fn().mockResolvedValue({
@@ -40,9 +32,10 @@ describe('self-assessment calculation-list HMRC request', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    cookieStore.has.mockReturnValue(true);
-    cookieStore.get.mockReturnValue({ value: 'sandbox-access-token' });
-    vi.mocked(cookies).mockResolvedValue(cookieStore as unknown as Awaited<ReturnType<typeof cookies>>);
+    vi.mocked(getCurrentHmrcAccessToken).mockResolvedValue({
+      ok: true,
+      accessToken: 'sandbox-access-token',
+    });
     vi.stubGlobal('fetch', vi.fn());
     ({ POST: post } = await import('../../../app/api/hmrc/userRestrictedAuth/listSelfAssessmentTaxCalculations/route'));
   });

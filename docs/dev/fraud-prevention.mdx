@@ -2,7 +2,7 @@
 
 <br></br>
 
-<center>HMRC fraud-prevention headers are assembled for outbound requests by `buildFraudPreventionHeaders`. Browser-derived values are collected separately and passed to the server with the app's request.</center>
+<center>HMRC fraud-prevention headers are assembled for outbound requests by `buildFraudPreventionHeaders`. Browser observations are validated at the same-origin route boundary; network and identity values are derived server-side.</center>
 
 <br></br>
 
@@ -10,20 +10,16 @@
 
 ### Client headers
 
-`client/fraud/clientData.ts` currently builds values for:
+`client/fraud/clientData.ts` collects browser observations for:
 
 - `Gov-Client-Connection-Method`
 - `Gov-Client-Browser-JS-User-Agent`
 - `Gov-Client-Device-ID`
-- `Gov-Client-Multi-Factor`
-- `Gov-Client-Public-IP` and `Gov-Client-Public-IP-Timestamp`
-- `Gov-Client-Public-Port`
 - `Gov-Client-Screens`
 - `Gov-Client-Timezone`
-- `Gov-Client-User-IDs`
 - `Gov-Client-Window-Size`
 
-The browser helper obtains screen, window, timezone, and user-agent details and stores a device ID in local storage. The server derives the client public IP from the trusted incoming request; it does not trust a client-submitted IP value. Some browser values can be empty or unavailable, so the generated header names alone do not prove that the values meet HMRC's current requirements.
+The same-origin routes validate browser observations against an allowlist and reject extra fields, malformed values, and header-injection characters. The server sets `Gov-Client-Connection-Method` to `WEB_APP_VIA_SERVER` rather than accepting the browser's value. `Gov-Client-User-IDs` is built from the login email (when present) and Auth0 subject in the server session; browser-submitted identities are rejected. `Gov-Client-Multi-Factor` is not accepted from the browser because it describes authentication performed by the application; it remains omitted until the app can derive the factor evidence from a trusted authentication event.
 
 <br></br>
 
@@ -31,16 +27,17 @@ The browser helper obtains screen, window, timezone, and user-agent details and 
 
 ### Vendor headers
 
-The server helper resolves `Gov-Client-Public-IP` from the trusted Vercel request IP using the same resolver shown in the IP diagnostics, and resolves `Gov-Vendor-Public-IP` from the server-side IP lookup (falling back only to a configured, valid server IP). If either address cannot be resolved, it fails the HMRC request instead of sending an empty IP header.
+The application is intended to receive inbound traffic through the Raspberry Pi reverse proxy. The code does not assume Vercel headers or trust arbitrary `X-Forwarded-For`/`X-Real-IP` values. It reads the client IP and public port only from the header names explicitly configured as `HMRC_CLIENT_PUBLIC_IP_HEADER` and `HMRC_CLIENT_PUBLIC_PORT_HEADER`. Configure these only after verifying that the Pi proxy overwrites those headers with the actual originating values; do not use a client-supplied or append-only forwarded value. The IP is syntax-checked, the public port is range-checked and excludes 80/443, and the timestamp is generated server-side. If the names are unset or the values are invalid, the corresponding headers are omitted rather than replaced with browser data or placeholders.
+
+`SERVER_PUBLIC_IP` must be set to the public IP address of the Pi endpoint that receives the browser connection. Given the stated single reverse-proxy ingress, the helper reports one vendor hop (`by=<Pi public IP>&for=<client public IP>`). Confirm that there are no other vendor-controlled TLS-terminating hops before relying on this chain. The helper does not use a public IP lookup service as a substitute for the configured ingress address. The IP diagnostic endpoint's IP-lookup result is reference information only; it is not used as an HMRC header value.
 
 The server helper adds:
 
-- `Gov-Vendor-Forwarded`, built from the client IP and configured proxy/server IPs.
+- `Gov-Vendor-Forwarded` and `Gov-Vendor-Public-IP`, based on the configured Pi public IP and the proxy-derived client IP.
 - `Gov-Vendor-License-IDs`, built from the configured application name and licence key.
 - `Gov-Vendor-Product-Name` and `Gov-Vendor-Version`, built from the configured application name.
-- `Gov-Vendor-Public-IP`, looked up by the server through an external IP service.
 
-Set and verify the related environment variables and proxy chain for the deployment. The server uses the first `x-forwarded-for` address only when running behind Vercel's trusted ingress, and validates it as an IP address; if it is invalid, the validated Vercel `x-real-ip` value is used as a fallback. Outside Vercel, client IP headers are not trusted. Do not infer the true network path from defaults or development values.
+Unset proxy-header settings intentionally cause network-derived headers to be omitted. This is safe against spoofing but is not evidence that the resulting request satisfies HMRC's fraud-prevention requirements. HMRC says that missing required data should be discussed with HMRC; do not use this configuration in Production without verifying the Pi header behavior, setting the deployment values, and checking all resulting Sandbox header feedback.
 
 <br></br>
 
@@ -48,6 +45,6 @@ Set and verify the related environment variables and proxy chain for the deploym
 
 ### Validation and safeguards
 
-`POST /api/hmrc/fraud/test` sends the generated headers to HMRC Sandbox's `GET /test/fraud-prevention-headers/validate` endpoint. It validates the fraud-prevention headers attached to that same request. Use its feedback during integration, but treat it as a test of the submitted request, not a general compliance certification.
+`POST /api/hmrc/fraud/test` sends the generated headers to HMRC Sandbox's `GET /test/fraud-prevention-headers/validate` endpoint. It validates the fraud-prevention headers attached to that same request. Use its feedback during integration, but treat it as a test of the submitted request, not a general compliance certification. This Sandbox support endpoint does not establish Production compliance.
 
-Before production, review the current HMRC fraud-prevention specification and each data source. In particular, replace the fixed user ID currently present in the browser helper with an appropriate per-user value, review IP collection and proxy trust, and ensure the required client information is collected accurately and transparently. Do not log or expose access tokens or unnecessary personal data.
+The current implementation and its tests guard against client-submitted network addresses, ports, timestamps, and user IDs. However, the Pi's actual proxy configuration and its header names have not been verified from this repository, and the Sandbox fraud-header validator has not yet been run against the live Pi path. This task remains open until both are checked. Do not log access tokens or unnecessary taxpayer data.

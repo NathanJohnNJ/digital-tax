@@ -325,12 +325,14 @@ export async function forwardValidatedHmrcResponse(
   isValidResponse: (body: unknown) => boolean,
   identifiers: string[] = [],
   expectedStatus = 200,
+  onUnauthorized?: () => Promise<void>,
 ): Promise<Response> {
   const body = readHmrcBody(await response.text());
   const correlationId = response.headers.get('X-CorrelationId');
   const headers = correlationId ? { 'X-CorrelationId': correlationId } : undefined;
 
   if (!response.ok) {
+    if (response.status === 401) await onUnauthorized?.();
     const safeError = getSafeHmrcError(body, identifiers);
     const code = safeError.details?.code;
     console.error(`HMRC ${operation} failed`, {

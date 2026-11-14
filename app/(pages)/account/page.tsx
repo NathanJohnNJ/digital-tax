@@ -1,15 +1,27 @@
 import { auth0 } from '@/lib/auth0';
+import { ensureAppUser } from '@/lib/appUser';
+import { hasHmrcAuthorization } from '@/lib/hmrcTokens';
 import LoginButton from '../../components/auth/LoginButton';
 import LogoutButton from '../../components/auth/LogoutButton';
 import Profile from '../../components/Profile';
-import { cookies } from 'next/headers';
 import Image from 'next/image';
 
 export default async function AccountHome(){
   const session = await auth0.getSession();
   const user = session?.user;
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get('access_token')?.value;
+  let hmrcConnected = false;
+
+  if (user?.sub) {
+    try {
+      const appUser = await ensureAppUser(user);
+      hmrcConnected = await hasHmrcAuthorization(appUser.id);
+    } catch (error) {
+      console.error("Unable to load the signed-in user's account status", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
+      throw error;
+    }
+  }
 
   return (
     <div className="flex flex-col items-center justify-center bg-sky-75 p-3 w-[99%] h-full border-2 -z-50 border-blue-500 rounded-2xl rounded-tl-none transition-all duration-75">
@@ -19,7 +31,7 @@ export default async function AccountHome(){
             <div className="flex flex-col justify-start items-center w-full h-full">
               <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-3">Your Account</h1>
               <div className="h-3" />
-              <Profile accessToken={accessToken}/>
+              <Profile hmrcConnected={hmrcConnected}/>
               <div className="h-6" />
             </div>
             <LogoutButton />
