@@ -8,37 +8,47 @@ import { formatDisplayDate } from '@/app/api/utils/ukTaxYear';
 export default function YearEnd(props: any){
   const { businessId, nino, year } = props;
   const [ yearEndObligations, setYearEndObligations ] = useState<Obligations>();
+  const [ error, setError ] = useState<string>();
 
 useEffect(()=>{
+  let active = true;
   setYearEndObligations(undefined);
+  setError(undefined);
 
   async function getYearEndObligations(){
-    const clientData = await buildClientPayload();
-    const req = await fetch(`/api/hmrc/userRestrictedAuth/obligations/yearEnd`, {
-      method: 'POST',
-      body: JSON.stringify({
-        nino: nino,
-        clientData: clientData,
-        taxYear: year
-      })
-    })
-    if (!req.ok) {
-      return undefined;
+    try {
+      const clientData = await buildClientPayload();
+      if (!active) return;
+      const req = await fetch(`/api/hmrc/userRestrictedAuth/obligations/yearEnd`, {
+        method: 'POST',
+        body: JSON.stringify({
+          nino: nino,
+          clientData: clientData,
+          taxYear: year
+        })
+      });
+      if (!req.ok) {
+        if (active) setError('Unable to load year-end obligations. Please try again.');
+        return;
+      }
+      const obligations = await req.json() as Obligations;
+      if (active) setYearEndObligations(obligations);
+    } catch (error) {
+      if (active) {
+        console.error('Unable to load year-end obligations', {
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+        });
+        setError('Unable to load year-end obligations. Please try again.');
+      }
     }
-
-    return await req.json() as Obligations;
   }
-  async function getObligations(){
-    const obs = await getYearEndObligations();
-    if (obs) {
-      setYearEndObligations(obs);
-    }
-  }
-  getObligations();
-}, [year])
+  getYearEndObligations();
+  return () => { active = false; };
+}, [year, nino])
   
   return (
     <div className="">
+      {error && <p role="alert">{error}</p>}
       { yearEndObligations &&
         <div className="p-2 m-4 flex flex-col">
           {yearEndObligations.obligations.map((obligation) => (

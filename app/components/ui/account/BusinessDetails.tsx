@@ -57,9 +57,9 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
 
   return (
-    <div className="grid grid-cols-[minmax(9rem,auto)_1fr] gap-x-4">
+    <div className="grid min-w-0 gap-x-4 sm:grid-cols-[minmax(9rem,auto)_1fr]">
       <dt className="font-semibold">{label}</dt>
-      <dd>{value}</dd>
+      <dd className="min-w-0 break-words">{value}</dd>
     </div>
   );
 }

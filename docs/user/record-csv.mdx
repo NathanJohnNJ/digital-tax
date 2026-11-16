@@ -1,6 +1,6 @@
 ## Digital records: CSV import and export
 
-**Availability:** The import screen and endpoints are in the current development code and will be available after deployment. An export button and full records workspace have not yet been built. Saved records are not yet used to calculate or submit quarterly updates.
+**Availability:** The import and export screen and endpoints are in the current development code and will be available after deployment. The full records workspace has not yet been built. Saved records are not yet used to calculate or submit quarterly updates.
 
 ### Prepare a spreadsheet
 
@@ -96,6 +96,12 @@ For example, `"recordDate": "Date"` maps the app's date field to a CSV column na
 4. If preview returns `rowErrors`, correct the reported rows and preview again; the whole file is rejected on validation errors. The response includes validated rows and possible existing duplicate row numbers. Identical normalized rows within the file are rejected. Existing records matching date, type, category, source amount and currency are flagged as **possible** duplicates, not automatically discarded.
 5. To commit, send the same CSV, business ID and mapping with `mode: "commit"`, plus the `batchId` and `contentSha256` returned by preview. Only if you have reviewed and want to import possible duplicates, include `"confirmPossibleDuplicates": true`. Do not change the CSV or mapping between preview and commit. Retrying the same committed batch is idempotent.
 6. `GET /api/records/import/{batchId}` reviews a committed batch. To undo an unwanted import, send `DELETE` to that URL with JSON `{ "confirm": true }`: unchanged imported records are archived, while edited or already archived records are skipped and counted in the response.
+
+### Export in the app
+
+After deployment, sign in and open **Import records** in account navigation. Under **Export digital records**, select a business, a tax year in `YYYY-YY` format, or both, and select **Download records CSV**. Leave both filters blank for all businesses and all dates. Inactive businesses are available for export but cannot receive new imports. If the business list cannot be loaded, you can still download an unfiltered export.
+
+A filtered file is not a full account export. If the download fails or is interrupted, download it again; do not rely on an incomplete file.
 
 ### Export using the current API
 

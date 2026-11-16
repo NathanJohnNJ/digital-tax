@@ -57,8 +57,8 @@ export default function CreateTestUser() {
   };
 
   return (
-    <div className="m-10 p-10">
-      <form name="createUserForm" action={clickHandle} className="flex flex-col mb-4 relative border-2 border-amber-500 p-6 rounded-2xl">
+    <div className="w-full min-w-0 max-w-xl p-2 sm:p-6">
+      <form name="createUserForm" action={clickHandle} className="flex flex-col mb-4 relative border-2 border-amber-500 p-3 sm:p-6 rounded-2xl">
         { serviceNames.map((service, i) => {
           return (
             <label htmlFor={service} className="m-2 hover:font-semibold" key={i}>
@@ -76,7 +76,7 @@ export default function CreateTestUser() {
       { testUser &&
         <div className="flex flex-col mt-12">
           <p>Test user has been created. See details below:</p>
-          <ul className="overflow-y-scroll border-2 border-amber-500 p-6 rounded-2xl m-4">
+          <ul className="break-words border-2 border-amber-500 p-3 sm:p-6 rounded-2xl my-4">
             <li className="flex"><strong>User ID: </strong><span>{testUser.userId}</span></li>
             <li className="flex"><strong>Password: </strong><span>{testUser.password}</span></li>
             <li className="flex"><strong>Full Name: </strong><span>{testUser.userFullName}</span></li>

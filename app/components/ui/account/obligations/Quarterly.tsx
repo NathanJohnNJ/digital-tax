@@ -14,38 +14,48 @@ type QuarterlyProps = {
 export default function Quarterly(props: QuarterlyProps){
   const { businessId, nino, year } = props;
   const [ quarterlyObligations, setQuarterlyObligations ] = useState<QuarterlyObligations>();
+  const [ error, setError ] = useState<string>();
 
   useEffect(() => {
+    let active = true;
     setQuarterlyObligations(undefined);
+    setError(undefined);
 
     async function getQuarterlyObligations(){
-      const clientData = await buildClientPayload();
-      const req = await fetch(`/api/hmrc/userRestrictedAuth/obligations/quarterly`, {
-        method: 'POST',
-        body: JSON.stringify({
-          nino: nino,
-          businessId: businessId,
-          clientData: clientData,
-          taxYear: year
-        })
-      })
-      if (!req.ok) {
-        return undefined;
+      try {
+        const clientData = await buildClientPayload();
+        if (!active) return;
+        const req = await fetch(`/api/hmrc/userRestrictedAuth/obligations/quarterly`, {
+          method: 'POST',
+          body: JSON.stringify({
+            nino: nino,
+            businessId: businessId,
+            clientData: clientData,
+            taxYear: year
+          })
+        });
+        if (!req.ok) {
+          if (active) setError('Unable to load quarterly obligations. Please try again.');
+          return;
+        }
+        const obligations = await req.json() as QuarterlyObligations;
+        if (active) setQuarterlyObligations(obligations);
+      } catch (error) {
+        if (active) {
+          console.error('Unable to load quarterly obligations', {
+            errorName: error instanceof Error ? error.name : 'UnknownError',
+          });
+          setError('Unable to load quarterly obligations. Please try again.');
+        }
       }
-      
-      return await req.json() as QuarterlyObligations;
     }
-    async function getObligations(){
-      const obs = await getQuarterlyObligations();
-      if (obs) {
-        setQuarterlyObligations(obs);
-      }
-    }
-    getObligations();
-  }, [year])
+    getQuarterlyObligations();
+    return () => { active = false; };
+  }, [year, nino, businessId])
 
   return(
     <div className="">
+      {error && <p role="alert">{error}</p>}
       { quarterlyObligations &&
         <div className="p-2 m-4 flex flex-col">
           {quarterlyObligations.obligations.flatMap((business) => business.obligationDetails).map((obligation) => (

@@ -24,13 +24,11 @@ function PoundNoEntryIllustration() {
     >
       <circle cx="80" cy="80" r="65" stroke="#dc2626" strokeWidth="9" />
       <path
-        d="M95 75C77 81 75 67 60 76M103 55C104 43 74 35 70 56 67 74 84 84 67 107 62 115 54 106 69 104 94 102 100 114 109 102"
+        d="M91.5 77.5C73.5 83.5 71.5 69.5 56.5 78.5M99.5 57.5C100.5 45.5 70.5 37.5 66.5 58.5 63.5 76.5 80.5 86.5 63.5 109.5 58.5 117.5 50.5 108.5 65.5 106.5 90.5 104.5 96.5 116.5 105.5 104.5"
         stroke="#166534"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="8"
-        transform-origin="center"
-        transform="translate(-3.5 2.5)"
       />
       <path
         d="m25 110 110-55"
@@ -43,7 +41,7 @@ function PoundNoEntryIllustration() {
 
 export default function Home() {
   return (
-    <div className="h-[99%] w-[99.75%] ml-[-0.25%] overflow-y-auto rounded-2xl border-2 border-green-700 bg-green-75 p-3 transition-all duration-75 scrollbar-none">
+    <div className="w-full rounded-2xl border-2 border-green-700 bg-green-75 p-3 transition-all duration-75">
       <main className="mx-auto flex min-h-full w-full flex-col items-center rounded-xl bg-white px-4 py-8 text-stone-700 sm:px-6 md:py-12">
         <Image
           src="/images/rectWithNJTD.png"
@@ -111,7 +109,7 @@ export default function Home() {
                 <span
                   id="open-source-explanation"
                   role="tooltip"
-                  className="pointer-events-none invisible absolute bottom-full left-1/2 z-10 mb-3 w-64 -translate-x-1/2 rounded-lg bg-stone-900 p-3 text-left text-sm font-normal leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+                  className="pointer-events-none invisible absolute bottom-full right-0 z-10 mb-3 w-64 max-w-[calc(100vw-2rem)] rounded-lg bg-stone-900 p-3 text-left text-sm font-normal leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
                 >
                   The app&apos;s code is public so developers can inspect it and
                   build on it. Your personal or tax information is not part of

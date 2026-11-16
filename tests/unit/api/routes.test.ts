@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST as quarterlyObligationsPost } from '../../../app/api/hmrc/userRestrictedAuth/obligations/quarterly/route';
+import { POST as yearEndObligationsPost } from '../../../app/api/hmrc/userRestrictedAuth/obligations/yearEnd/route';
 import { POST as businessDetailsPost } from '../../../app/api/hmrc/userRestrictedAuth/businessDetails/route';
 import { POST as businessListPost } from '../../../app/api/hmrc/userRestrictedAuth/businessList/route';
 import { POST as recordsImportPost } from '../../../app/api/records/import/route';
@@ -23,7 +24,7 @@ vi.mock('../../../lib/hmrcTokens', () => ({
   getCurrentHmrcAccessToken: vi.fn(),
   markCurrentHmrcAuthorizationRequired: vi.fn(),
 }));
-vi.mock('../../../lib/db', () => ({ pool: { query: queryMock } }));
+vi.mock('../../../lib/db', () => ({ pool: { query: queryMock, connect: vi.fn(async () => ({ query: queryMock, release: vi.fn() })) } }));
 
 const cookieStore = {
   has: vi.fn(),
@@ -60,7 +61,16 @@ describe('API route handlers', () => {
   });
 
   it('builds the quarterly HMRC request from the selected tax year', async () => {
-    const responsePayload = { obligations: [] };
+    const responsePayload = { obligations: [{
+      typeOfBusiness: 'self-employment',
+      businessId: 'XBIS12345678901',
+      obligationDetails: [{
+        periodStartDate: '2025-04-06',
+        periodEndDate: '2025-07-05',
+        dueDate: '2025-08-05',
+        status: 'open',
+      }],
+    }] };
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(createHmrcResponse(responsePayload));
 
@@ -68,7 +78,7 @@ describe('API route handlers', () => {
       clientData: { browserUserAgent: 'test' },
       nino: 'AB123456C',
       businessId: 'XBIS12345678901',
-      taxYear: '2018-19'
+      taxYear: '2025-26'
     }));
 
     expect(response.status).toBe(200);
@@ -77,9 +87,41 @@ describe('API route handlers', () => {
     expect(requestUrl.pathname).toContain('/obligations/details/AB123456C/income-and-expenditure');
     expect(requestUrl.searchParams.get('businessId')).toBe('XBIS12345678901');
     expect(requestUrl.searchParams.get('typeOfBusiness')).toBe('self-employment');
-    expect(requestUrl.searchParams.get('fromDate')).toBe('2018-04-06');
-    expect(requestUrl.searchParams.get('toDate')).toBe('2019-04-05');
+    expect(requestUrl.origin).toBe('https://test-api.service.hmrc.gov.uk');
+    expect(requestUrl.searchParams.get('fromDate')).toBe('2025-04-06');
+    expect(requestUrl.searchParams.get('toDate')).toBe('2026-04-05');
     expect(new Headers(requestOptions.headers).get('Authorization')).toBe('Bearer test-access-token');
+    expect(new Headers(requestOptions.headers).get('Accept')).toBe('application/vnd.hmrc.3.0+json');
+    expect(new Headers(requestOptions.headers).get('Gov-Test-Scenario')).toBe('DYNAMIC');
+  });
+
+  it('requests dynamic Sandbox year-end obligations for the selected year', async () => {
+    const responsePayload = {
+      obligations: [{
+        periodStartDate: '2025-04-06',
+        periodEndDate: '2026-04-05',
+        dueDate: '2027-01-31',
+        status: 'open',
+      }],
+    };
+    vi.mocked(fetch).mockResolvedValueOnce(createHmrcResponse(responsePayload));
+
+    const response = await yearEndObligationsPost(createPostRequest('http://localhost/api/year-end', {
+      clientData: {},
+      nino: 'AB123456C',
+      taxYear: '2025-26',
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(responsePayload);
+    const [input, options] = vi.mocked(fetch).mock.calls[0];
+    const url = new URL(String(input));
+    expect(url.origin).toBe('https://test-api.service.hmrc.gov.uk');
+    expect(url.pathname).toBe('/obligations/details/AB123456C/crystallisation');
+    expect(url.searchParams.get('taxYear')).toBe('2025-26');
+    expect(new Headers(options?.headers).get('Accept')).toBe('application/vnd.hmrc.3.0+json');
+    expect(new Headers(options?.headers).get('Authorization')).toBe('Bearer test-access-token');
+    expect(new Headers(options?.headers).get('Gov-Test-Scenario')).toBe('DYNAMIC');
   });
 
   it('returns HMRC quarterly errors with their upstream status', async () => {
@@ -400,7 +442,7 @@ describe('API route handlers', () => {
   });
 
   it('exports complete record and history data as correctly escaped, user-scoped CSV', async () => {
-    queryMock.mockResolvedValueOnce({
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
       rows: [{
         record_id: '33333333-3333-4333-8333-333333333333',
         record_business_id: '11111111-1111-4111-8111-111111111111',

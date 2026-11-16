@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         Accept: 'application/vnd.hmrc.3.0+json',
         Authorization: `Bearer ${token}`,
         ...fraudPreventionHeaders,
+        'Gov-Test-Scenario': 'DYNAMIC',
       },
     });
 

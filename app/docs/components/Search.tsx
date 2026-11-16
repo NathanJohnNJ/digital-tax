@@ -42,24 +42,25 @@ export default function Search() {
   );
 
   return (
-    <div className="sticky top-20 overflow-visible">
-      <h1 className="text-6xl  font-bold text-center -mt-2 mb-5">{title}</h1>
+    <div>
+      <h1 className="mb-5 break-words text-center text-2xl font-bold sm:text-4xl lg:text-5xl xl:text-6xl">{title}</h1>
 
-      <div className="w-5/7 flex flex-col justify-self-center relative">
+      <div className="relative mx-auto flex w-full max-w-xl flex-col">
         <input
           type="text"
           id="docsSearch"
           name="docsSearch"
+          aria-label="Search documentation"
           placeholder="Search documentation..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full h-8 sticky top-0 mb-6 border border-neutral-300 rounded-2xl px-3 py-2 bg-white flex justify-self-center"
+          className="mb-6 h-10 w-full rounded-2xl border border-neutral-300 bg-white px-3 py-2"
         />
 
         {query && (
           <ul id="resultsList"
           className={clsx(
-            ' absolute top-5 w-full mt-3 border border-neutral-600 rounded-2xl overflow-hidden transition-all duration-150 bg-white',
+            'absolute top-10 z-20 w-full overflow-hidden rounded-2xl border border-neutral-600 bg-white transition-all duration-150',
             {
               'slideDown': results
             },

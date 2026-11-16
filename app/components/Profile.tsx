@@ -108,11 +108,11 @@ export default function Profile({ hmrcConnected }: { hmrcConnected: boolean }) {
   if (isLoading) return <p className="text-xs text-gray-500">Loading...</p>;
   if (!user) return null;
   return (
-    <div className="flex">
-      <div className="flex flex-col justify-center items-center gap-2 bg-linear-to-tr from-gray-200 to-40% to-gray-50 rounded-4xl m-6 p-4 text-[14px] text-gray-700 max-w-full h-min border-2 border-blue-500 shadow-2xl">
-        <div className="flex items-center justify-between w-full h-min">
-          <h2 className="text-3xl font-bold self-start ml-4 mb-2 text-black">Your Details</h2>
-      <div className="flex items-center justify-center gap-2 text-green-500 text-[13px] font-medium fadeOut mr-4">
+    <div className="flex w-full min-w-0 flex-col items-center gap-4 lg:flex-row lg:items-start lg:justify-center">
+      <div className="flex w-full max-w-xl flex-col justify-center items-center gap-2 bg-linear-to-tr from-gray-200 to-40% to-gray-50 rounded-4xl p-4 text-[14px] text-gray-700 border-2 border-blue-500 shadow-2xl">
+        <div className="flex w-full flex-wrap items-center justify-between gap-2">
+          <h2 className="text-2xl font-bold text-black sm:text-3xl">Your Details</h2>
+      <div className="flex items-center justify-center gap-2 text-green-700 text-[13px] font-medium fadeOut">
         <span className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0">
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
             <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -121,30 +121,30 @@ export default function Profile({ hmrcConnected }: { hmrcConnected: boolean }) {
         Successfully authenticated
       </div>
         </div>
-        <div className="flex items-center">
+        <div className="flex w-full min-w-0 flex-col items-center gap-3 sm:flex-row">
           <div className="flex items-center">
             { user.picture?
-              <img width="160" height="160" loading="eager" src={user.picture} className="min-h-40 min-w-40 -ml-2" alt="User avatar" />
+              <img width="160" height="160" loading="eager" src={user.picture} className="h-24 w-24 rounded-full sm:h-40 sm:w-40" alt="User avatar" />
               :
-              <span className="w-40 h-40 bg-linear-to-b from-[#2d2d42] to-[#161620] rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0">
+              <span className="h-24 w-24 sm:h-40 sm:w-40 bg-linear-to-b from-[#2d2d42] to-[#161620] rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0">
                 {getInitials(user.name, user.email)}
               </span>
             }
           </div>
 
-          <div className="flex flex-col gap-0.5 justify-content-between items-center">
+          <div className="flex w-full min-w-0 flex-col items-center gap-1">
 
-            <div className="flex items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-grey-100 border border-gray-500 rounded-full py-1.5 pl-1.5 pr-4 text-[14px] ml-2 text-gray-700 w-full">
+            <div className="flex min-w-0 items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-gray-100 border border-gray-500 rounded-full py-1.5 pl-1.5 pr-4 text-[14px] text-gray-700 w-full">
               <span className="w-7 h-7 bg-linear-to-b from-[#2d2d42] to-[#161620] rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0">
                 {getInitials(user.name, user.email)}
               </span>
               <span className="truncate">{user.email}</span>
             </div>
-            <div className="flex items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-grey-100 border border-gray-500 rounded-full px-4 py-2 text-[14px] ml-2 text-gray-700 w-full">
+            <div className="flex min-w-0 items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-gray-100 border border-gray-500 rounded-full px-4 py-2 text-[14px] text-gray-700 w-full">
               <span className="truncate font-bold">{user.name}</span>
             </div>
-            <div className="flex items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-grey-100 border border-gray-500 rounded-full py-1.5 pr-1.5 pl-4 text-[14px] ml-2 text-gray-700 w-full">
-              <span className="truncate font-semibold">HMRC Account Connected?</span>
+            <div className="flex flex-wrap items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-gray-100 border border-gray-500 rounded-2xl py-1.5 pr-1.5 pl-4 text-[14px] text-gray-700 w-full">
+              <span className="font-semibold">HMRC Account Connected?</span>
               {
                 connected ?
                 <span className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0">
@@ -165,9 +165,9 @@ export default function Profile({ hmrcConnected }: { hmrcConnected: boolean }) {
             </div>
             {
               connected &&
-              <div className=" relative flex items-center gap-2 bg-linear-to-tr from-gray-300 via-gray-300 to-grey-100 border border-gray-500 rounded-full py-1.5 pr-1.5 pl-4 text-[14px] ml-2 text-gray-700 w-full">
+              <div className="relative flex w-full flex-wrap items-center gap-2 rounded-2xl border border-gray-500 bg-linear-to-tr from-gray-300 via-gray-300 to-gray-100 py-1.5 pr-1.5 pl-4 text-[14px] text-gray-700">
                 <span className="truncate font-semibold" title="National Insurance number">N.I. Number</span>
-                <input id="nino" name="nino" className="bg-white/90 rounded-lg pl-3 font-light" disabled={entered} placeholder="AA000000A" value={nino} onChange={e=>setNino(e.target.value)} />
+                <input id="nino" name="nino" className="min-w-0 w-28 bg-white/90 rounded-lg pl-3 font-light" disabled={entered} placeholder="AA000000A" value={nino} onChange={e=>setNino(e.target.value)} />
                 <button
                   className="w-7 h-7 bg-gray-500 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0"
                   onClick={() => NIHandler(nino)}
@@ -184,7 +184,7 @@ export default function Profile({ hmrcConnected }: { hmrcConnected: boolean }) {
                 </span>
                 {
                   shown &&
-                  <span className="text-[10px] bg-gray-400/90 rounded-full w-fit whitespace-nowrap p-4 absolute top-10 ">
+                  <span className="absolute top-full z-10 max-w-full rounded-xl bg-gray-200 p-3 text-xs text-gray-900 shadow-lg">
                     Enter your National Insurance number in the format 'AA000000A'.
                   </span>
                 }
@@ -194,9 +194,9 @@ export default function Profile({ hmrcConnected }: { hmrcConnected: boolean }) {
         </div>
       </div>
       { businessList && 
-        <div className="border-2 border-blue-500 rounded-4xl m-6 p-3 pb-0 shadow-2xl h-min bg-linear-to-tr from-gray-200 to-40% to-gray-50 ">
-          <h2 className="text-3xl font-bold ml-2 mt-2 -mb-6">Your Business{businessList.listOfBusinesses.length > 1 ? 'es' : ''}</h2>
-          <div className="flex flex-col justify-center items-center mt-6 rounded-4xl p-5 text-[14px] text-gray-700 max-w-full">
+        <div className="w-full max-w-xl min-w-0 border-2 border-blue-500 rounded-4xl p-3 shadow-2xl bg-linear-to-tr from-gray-200 to-40% to-gray-50">
+          <h2 className="text-2xl font-bold ml-2 mt-2 sm:text-3xl">Your Business{businessList.listOfBusinesses.length > 1 ? 'es' : ''}</h2>
+          <div className="flex flex-col justify-center items-center gap-3 rounded-4xl p-2 sm:p-5 text-[14px] text-gray-700 max-w-full">
             { businessList.listOfBusinesses.map((business: any, i: number) => {
               return (
                 <BusinessButton business={business} key={i} nino={nino} />

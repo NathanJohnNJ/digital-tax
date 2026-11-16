@@ -4,12 +4,14 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import Link from 'next/link';
 import { parseCsv, RECORD_CSV_FIELDS, type RecordCsvField } from '@/lib/recordCsv';
 import type { DigitalRecordInput } from '@/lib/digitalRecords';
+import { isValidTaxYear } from '@/app/api/utils/hmrcValidation';
 
 type Business = {
   recordBusinessId: string;
   hmrcBusinessId: string;
   typeOfBusiness: string;
   tradingName: string | null;
+  isActive: boolean;
 };
 type Mapping = Partial<Record<RecordCsvField, string>>;
 type Preview = {
@@ -49,6 +51,7 @@ function isBusiness(value: unknown): value is Business {
     && typeof value.recordBusinessId === 'string'
     && typeof value.hmrcBusinessId === 'string'
     && typeof value.typeOfBusiness === 'string'
+    && typeof value.isActive === 'boolean'
     && (typeof value.tradingName === 'string' || value.tradingName === null);
 }
 
@@ -87,6 +90,9 @@ export default function RecordCsvImport() {
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
   const [businessError, setBusinessError] = useState('');
   const [businessId, setBusinessId] = useState('');
+  const [exportBusinessId, setExportBusinessId] = useState('');
+  const [exportTaxYear, setExportTaxYear] = useState('');
+  const [exportError, setExportError] = useState('');
   const [csvText, setCsvText] = useState('');
   const [fileName, setFileName] = useState('');
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -104,7 +110,7 @@ export default function RecordCsvImport() {
     let active = true;
     async function loadBusinesses() {
       try {
-        const response = await fetch('/api/records/businesses');
+        const response = await fetch('/api/records/businesses?includeInactive=true');
         const body = await readResponse(response);
         if (!response.ok) throw new Error(responseError(body, 'Unable to load your businesses.'));
         if (!isObject(body) || !Array.isArray(body.businesses) || !body.businesses.every(isBusiness)) {
@@ -241,6 +247,7 @@ export default function RecordCsvImport() {
 
   const visibleFields = RECORD_CSV_FIELDS.filter((field) => mapping[field]);
   const selectedBusiness = businesses.find((business) => business.recordBusinessId === businessId);
+  const activeBusinesses = businesses.filter((business) => business.isActive);
   const pageRows = preview?.rows.slice(page * pageSize, (page + 1) * pageSize) ?? [];
   const totalPages = preview ? Math.ceil(preview.rows.length / pageSize) : 0;
   const buttonClass = 'inline-block rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
@@ -258,7 +265,7 @@ export default function RecordCsvImport() {
       </div>
       {loadingBusinesses && <p role="status">Loading verified businesses...</p>}
       {businessError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-900">{businessError}</p>}
-      {!loadingBusinesses && !businessError && businesses.length === 0 && (
+      {!loadingBusinesses && !businessError && activeBusinesses.length === 0 && (
         <p className="rounded-lg bg-amber-50 p-3">No verified businesses found. Link HMRC and load your businesses from <Link className="text-blue-700 underline" href="/account">your account</Link>, then return here.</p>
       )}
       <form onSubmit={previewImport} className="space-y-5">
@@ -267,7 +274,7 @@ export default function RecordCsvImport() {
             Verified business
             <select className={inputClass} value={businessId} onChange={(event) => { setBusinessId(event.target.value); clearPreview(); }}>
               <option value="">Select a business</option>
-              {businesses.map((business) => (
+              {activeBusinesses.map((business) => (
                 <option key={business.recordBusinessId} value={business.recordBusinessId}>
                   {business.tradingName || business.typeOfBusiness} ({business.typeOfBusiness}, {business.hmrcBusinessId})
                 </option>
@@ -304,7 +311,7 @@ export default function RecordCsvImport() {
               </div>
             </div>
           )}
-          <button type="submit" className={buttonClass} disabled={loadingBusinesses || !!businessError || businesses.length === 0}>Preview import</button>
+          <button type="submit" className={buttonClass} disabled={loadingBusinesses || !!businessError || activeBusinesses.length === 0}>Preview import</button>
         </fieldset>
       </form>
       {busy && <p role="status">Please wait...</p>}
@@ -320,10 +327,10 @@ export default function RecordCsvImport() {
               <label className="mt-2 flex items-start gap-2"><input type="checkbox" checked={confirmDuplicates} disabled={busy} onChange={(event) => setConfirmDuplicates(event.target.checked)} /> I reviewed these rows and want to import them anyway.</label>
             </div>
           )}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead><tr><th scope="col" className="border p-2">CSV row</th>{visibleFields.map((field) => <th scope="col" className="border p-2" key={field}>{labels[field]}</th>)}</tr></thead>
-              <tbody>{pageRows.map((row) => <tr key={row.rowNumber}><th scope="row" className="border p-2">{row.rowNumber}</th>{visibleFields.map((field) => <td className="border p-2" key={field}>{row.record[field] ?? '—'}</td>)}</tr>)}</tbody>
+          <div className="md:overflow-x-auto">
+            <table className="block w-full border-collapse text-left text-sm md:table">
+              <thead className="hidden md:table-header-group"><tr><th scope="col" className="border p-2">CSV row</th>{visibleFields.map((field) => <th scope="col" className="border p-2" key={field}>{labels[field]}</th>)}</tr></thead>
+              <tbody className="block md:table-row-group">{pageRows.map((row) => <tr className="mb-3 block rounded-lg border md:table-row" key={row.rowNumber}><th scope="row" className="block border-b p-2 md:table-cell md:border"><span className="md:hidden">CSV row </span>{row.rowNumber}</th>{visibleFields.map((field) => <td className="block break-words p-2 md:table-cell md:border" key={field}><span className="font-semibold md:hidden">{labels[field]}: </span>{row.record[field] ?? '—'}</td>)}</tr>)}</tbody>
             </table>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -347,6 +354,37 @@ export default function RecordCsvImport() {
           }}>Import another file</button>
         </div>
       )}
+      <section className="space-y-4 rounded-lg border border-gray-300 p-4" aria-labelledby="export-heading">
+        <h2 id="export-heading" className="text-xl font-bold">Export digital records</h2>
+        <p>Download your records, including archived records and available history. Leave both filters blank for all businesses and all dates. A filtered export is not a full account export.</p>
+        <form action="/api/records/export" method="get" className="space-y-4" onSubmit={(event) => {
+          if (exportTaxYear && !isValidTaxYear(exportTaxYear)) {
+            event.preventDefault();
+            setExportError('Enter a valid tax year such as 2026-27, or leave it blank.');
+          } else {
+            setExportError('');
+          }
+        }}>
+          <label className="block font-semibold">
+            Export business
+            <select className={inputClass} name={exportBusinessId ? 'businessId' : undefined} value={exportBusinessId} onChange={(event) => setExportBusinessId(event.target.value)} disabled={loadingBusinesses || !!businessError}>
+              <option value="">All businesses</option>
+              {businesses.map((business) => (
+                <option key={business.recordBusinessId} value={business.recordBusinessId}>
+                  {business.tradingName || business.typeOfBusiness} ({business.typeOfBusiness}, {business.hmrcBusinessId}){business.isActive ? '' : ' - inactive'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block font-semibold">
+            Export tax year (optional)
+            <input className={inputClass} name={exportTaxYear ? 'taxYear' : undefined} value={exportTaxYear} onChange={(event) => { setExportTaxYear(event.target.value); setExportError(''); }} placeholder="2026-27" />
+          </label>
+          {exportError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-900">{exportError}</p>}
+          <button type="submit" className={buttonClass}>Download records CSV</button>
+        </form>
+        <p>Submission references are not yet populated. This export is not a database backup.</p>
+      </section>
     </section>
   );
 }

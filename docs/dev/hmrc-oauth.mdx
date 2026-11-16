@@ -55,10 +55,22 @@ Before deploying this flow:
 
 1. The connected Supabase database was checked on 7 November 2026: `public.hmrc_user_tokens` exists with the expected columns, constraints, row-level security, and API-role privileges, and `public.users` remains in place. Do not rerun the table creation SQL on that database.
 2. The connected database's existing schema is captured in the [baseline migration](../../supabase/migrations/20261107014720_baseline.sql) and recorded as applied in its migration history. The earlier [token-table SQL](../../supabase/archive/20261106140000_create_hmrc_user_tokens.sql) is historical reference only; do not run it after the baseline.
-3. Configure the same base64-encoded 32-byte `HMRC_TOKEN_ENCRYPTION_KEY` in each server environment sharing the token table. A key was created in this development environment's ignored `.env`; configuring the Raspberry Pi and any other environments remains outstanding. Do not commit the value or generate a different key for an environment sharing the table.
+3. Configure the same base64-encoded 32-byte `HMRC_TOKEN_ENCRYPTION_KEY` in each server environment sharing the token table. A key was created in this development environment's ignored `.env`, and the operator confirmed the same key is used on the Raspberry Pi. Confirm any other environments separately. Do not commit the value or generate a different key for an environment sharing the table.
 4. Verify account-row creation, HMRC linking, a refresh near access-token expiry, refresh failure handling, and reuse from a second browser/device against Sandbox.
 
 Existing browser-only token cookies cannot be safely migrated into the per-user token store. After the schema and key are configured, an existing linked user may need to authorize once more; subsequent logins and devices use the server-side account connection.
+
+### Raspberry Pi and Sandbox verification
+
+The operator confirmed the Pi uses the same `HMRC_TOKEN_ENCRYPTION_KEY` as the development instance that uses the shared token table. Keep it in the Pi's protected PM2 deployment configuration. Do not print or paste the key into chat, commit it, generate a replacement, or place it in a shell command/history. If configuration changes, ensure the running process receives the configured value, restart or reload using the existing deployment procedure, and persist the PM2 configuration if appropriate. Do not expose PM2 environment output, which may contain secrets.
+
+The operator confirmed that an existing HMRC Sandbox connection and its business list were available on a second browser/device without relinking. They also confirmed that the authenticated same-origin `GET /api/hmrc/userRestrictedAuth/refresh` forced a successful refresh and the business list remained available, and that the connection and business list remained available after more than four hours of inactivity across devices.
+
+The operator signed up a new app account, saw it initially unlinked, linked a Sandbox test user, and loaded its business list. On switching accounts, both displayed their respective email, saved NI number and linked status. The operator also declined a new authorization for the linked account, received the expected failure message, and confirmed the existing connection and business list remained available. These observations do not independently verify the first-login database row, which HMRC identity a stored token belongs to, or financial-data isolation.
+
+Both test users displayed the same business ID, consistent with the default simulated self-employment scenario described in HMRC's [Business Details v2.0 Sandbox reference](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/business-details-api/2.0/oas/retrieve.yaml). Identical simulated business details do not by themselves establish that tokens or stored records are shared.
+
+Do not alter stored tokens to force a failure; automated tests cover `invalid_grant`, but the declined-authorization test does not. A confirmed safe Sandbox refresh-failure scenario and its observable relink state still need end-to-end verification.
 
 ---
 

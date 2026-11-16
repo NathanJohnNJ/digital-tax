@@ -4,6 +4,7 @@ import { isIsoDate, isUuid } from "@/lib/digitalRecords";
 import { getRecordUser, logRecordRouteError } from "@/lib/digitalRecordsServer";
 import { isValidTaxYear } from "@/app/api/utils/hmrcValidation";
 import { serializeCsvRow } from "@/lib/recordCsv";
+import type { PoolClient } from "pg";
 
 const EXPORT_HEADERS = [
   "record_id",
@@ -144,16 +145,45 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Export filters are invalid" }, { status: 400 });
   }
 
+  let client: PoolClient | undefined;
   let firstPage: Record<string, unknown>[];
   try {
+    client = await pool.connect();
+    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
     const query = createPageQuery(auth.userId, businessId, dates.fromDate, dates.toDate, null);
-    const result = await pool.query(query.text, query.values);
+    const result = await client.query(query.text, query.values);
     firstPage = result.rows;
   } catch (error) {
     await logRecordRouteError("export", error);
+    if (client) {
+      try {
+        await client.query("ROLLBACK");
+        client.release();
+      } catch (rollbackError) {
+        await logRecordRouteError("export rollback", rollbackError);
+        client.release(true);
+      }
+    }
     return NextResponse.json({ error: "Unable to export digital records" }, { status: 500 });
   }
 
+  const exportClient = client;
+  let finished: Promise<void> | undefined;
+  let cancelled = false;
+  function finish(commit: boolean): Promise<void> {
+    if (!finished) {
+      finished = (async () => {
+        try {
+          await exportClient.query(commit ? "COMMIT" : "ROLLBACK");
+          exportClient.release();
+        } catch (error) {
+          exportClient.release(true);
+          throw error;
+        }
+      })();
+    }
+    return finished;
+  }
   let pageIndex = 0;
   let lastRecordId: string | null = null;
   const stream = new ReadableStream<Uint8Array>({
@@ -171,10 +201,12 @@ export async function GET(request: NextRequest) {
             dates.toDate,
             lastRecordId,
           );
-          const result = await pool.query(query.text, query.values);
+          const result = await exportClient.query(query.text, query.values);
           rows = result.rows;
         }
+        if (cancelled) return;
         if (rows.length === 0) {
+          await finish(true);
           controller.close();
           return;
         }
@@ -182,10 +214,27 @@ export async function GET(request: NextRequest) {
         controller.enqueue(new TextEncoder().encode(`${output}\r\n`));
         lastRecordId = String(rows[rows.length - 1].record_id);
         pageIndex += 1;
-        if (rows.length < PAGE_SIZE) controller.close();
+        if (rows.length < PAGE_SIZE) {
+          await finish(true);
+          controller.close();
+        }
       } catch (error) {
         await logRecordRouteError("export stream", error);
-        controller.error(error);
+        try {
+          await finish(false);
+        } catch (rollbackError) {
+          await logRecordRouteError("export rollback", rollbackError);
+        }
+        if (!cancelled) controller.error(error);
+      }
+    },
+    async cancel() {
+      cancelled = true;
+      try {
+        await finish(false);
+      } catch (error) {
+        await logRecordRouteError("export cancellation", error);
+        throw error;
       }
     },
   });

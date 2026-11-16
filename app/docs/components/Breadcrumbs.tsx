@@ -8,7 +8,7 @@ export default function Breadcrumbs(){
   const pathArray = pathname.split("/");
   let href="/";
   return (
-    <div className="flex gap-x-2">
+    <div className="flex flex-wrap gap-x-2 gap-y-1 break-words">
       { pathArray.map((path, i) => {
         for (let j=i; j>0; j--){
           href = href.concat(`${path}/`)

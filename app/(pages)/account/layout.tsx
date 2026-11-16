@@ -4,15 +4,15 @@ import NavLinks from '../../components/ui/account/navLinks';
  
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center w-full h-full">
-      <div className="w-full h-min">
+    <div className="flex min-w-0 flex-1 flex-col items-center w-full">
+      <div className="w-full">
         <TopNav>
           <Suspense fallback={<div className="h-12" aria-hidden="true" />}>
             <NavLinks />
           </Suspense>
         </TopNav>
       </div>
-      <div className="flex w-full h-full -mt-3 pt-2.25 mb-3.5 z-0">{children}</div>
+      <div className="relative -mt-0.5 flex min-w-0 flex-1 w-full">{children}</div>
     </div>
   );
 }

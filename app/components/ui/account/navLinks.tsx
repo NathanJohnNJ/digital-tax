@@ -39,9 +39,12 @@ export default function NavLinks() {
             href={href}
             aria-label={link.name}
             className={clsx(
-              'flex h-12 grow items-center justify-center gap-2 rounded-t-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-50 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3 z-0',
+              'flex h-12 w-10 flex-none items-center justify-center gap-2 rounded-t-md bg-gray-50 p-2 text-sm font-medium hover:bg-sky-50 hover:text-blue-600 sm:w-12 md:w-auto md:justify-start md:px-3',
               {
-                'bg-sky-50 text-blue-600 border-t-2 border-l-2 border-r-2 border-b-sky-50 border-b-2 z-50 -mb-3': pathname === link.href,
+                'bg-sky-50 text-blue-600 border-t-2 border-l-2 border-r-2 border-blue-500 border-b-2 border-b-sky-50 z-1': pathname === link.href,
+              },
+              {
+                'rounded-tl-md': link.href !== '/account',
               },
             )}
           >
@@ -51,10 +54,8 @@ export default function NavLinks() {
         );
       })}
       {user &&
-      <div className="relative w-full h-full">
-      <div className="absolute right-3.75 ">
+      <div className="ml-auto flex items-center">
         <LogoutButton style={{borderBottomRightRadius: 0}} />
-        </div>
       </div>
       }
     </>
