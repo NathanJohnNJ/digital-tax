@@ -1,10 +1,12 @@
-# Digital records: implementation from inception to release
+# Digital records: implementation from inception to release - 49/85 (58%) COMPLETED - 1/8 (13%) SECTIONS COMPLETED
 
-This is the detailed delivery plan for the digital-records, user history, and export milestones in the [canonical implementation plan](./implementation-plan.md). The goal is for users to keep records in Digital Tax, review their history, and export their data. Quarterly figures should be traceable to those records rather than silently re-keyed.
+This is the detailed delivery plan for the digital-records, user history, and export milestones in the [canonical implementation plan](./implementation-plan.md). The goal is for users to keep records in Digital Tax, review their history, and export their data. Quarterly figures should be traceable to those records rather than silently re-keyed. Completed and outstanding verification checkpoints are in [testing.md](./testing.md).
 
 This document is a project checklist, not legal or tax advice. Verify current HMRC and GOV.UK requirements before finalising record fields, retention, correction, and deletion behavior. Do not treat Sandbox success as production approval.
 
-## Current baseline
+Progress counts checklist points, including the current baseline and completed token tasks, in sections with checkboxes. A section is complete only when all its points are checked; sections without checkboxes are excluded. Percentages are rounded to the nearest whole number. Phase 8 verification is tracked separately in [testing.md](./testing.md).
+
+## Current baseline - 19/19 COMPLETED
 
 - [x] A PostgreSQL connection pool is configured in `lib/db.ts`.
 - [x] Auth0 is used for application sign-in.
@@ -23,8 +25,10 @@ This document is a project checklist, not legal or tax advice. Verify current HM
 - [x] Confirmed scope should support both cash basis and traditional accounting, including relevant accounting adjustments, to serve as many eligible users as practical.
 - [x] Confirmed amounts sent to HMRC and used for tax returns are in GBP, and foreign-currency records should preserve the original value and conversion provenance.
 - [x] Confirmed CSV is the preferred export and a recent activity list capped at 50 entries is desired.
-- [x] Establish and verify a migration baseline that preserves the existing remote `users` table.
-- [ ] Create and test encrypted off-site logical backups (for example, Supabase CLI database dumps) or choose a paid plan with managed backups. User-facing CSV exports are not a database backup.
+- [x] Establish a migration baseline that preserves the existing remote `users` table.
+- [x] Create encrypted off-site logical backups without a paid Supabase plan. The Pi produced encrypted USB snapshots and enabled a daily timer on 16 November 2026; user-facing CSV exports are not a database backup.
+
+The Pi's encrypted USB snapshots cover the app's `public` and migration schemas; [backup setup and scope](./ops/README.md) are documented. An immediate service run and repository integrity check succeeded, but the first scheduled run, retention, additional disaster protection and restore verification remain open.
 
 ### Current implementation checkpoint
 
@@ -32,7 +36,7 @@ The initial record API implementation now includes authenticated business/record
 
 The additive schema in `supabase/migrations/20261114190000_create_digital_records.sql` was applied to the linked production Supabase project on 14 November 2026. All seven new tables and their RLS settings were verified remotely. The account now has a CSV import and export screen; the broader records workspace remains incomplete. Route tests use mocked PostgreSQL calls; database-backed route verification is still required. Submission snapshots and record-to-submission links, period totals, accounting treatment, and retention remain incomplete. Keep the corresponding phase checkboxes open until those integration and product requirements are satisfied.
 
-## Phase 1 — Confirm requirements and decisions
+## Phase 1 — Confirm requirements and decisions - 10/14 COMPLETED
 
 - [x] Set the product goal as a full end-to-end MTD journey with self-employment, UK property, and foreign property sources, rather than omitting a mandated source to simplify the product.
 - [x] Require manual record entry.
@@ -41,13 +45,13 @@ The additive schema in `supabase/migrations/20261114190000_create_digital_record
 - [x] Confirm individual records as the default. Grouped entries are allowed only for HMRC-documented eligible cases, not as unrestricted period totals.
 - [x] Decide to support cash basis and traditional accounting. HMRC's current guidance describes cash basis as the default and traditional-accounting adjustments for accruals/prepayments; implementation and year-end coverage remain open.
 - [x] Choose full-detail category mappings separately for self-employment, UK property, and foreign property, based on the current quarterly-update direction and cumulative API schemas. The field mapping is recorded below. Allowable/disallowable treatment and accounting-basis behavior still need implementation-specific validation.
-- [ ] Validate per-category allowable/disallowable treatment, restricted finance costs, and cash-versus-traditional accounting behavior for record aggregation and annual adjustments.
 - [x] Decide that HMRC-facing amounts and tax-return values are in pounds sterling; HMRC states foreign income and Self Assessment return entries are converted to sterling.
+- [x] Verify the GOV.UK retention rule for sole-trader business records: generally keep them for at least 5 years after the 31 January submission deadline for the relevant tax year; if the return is more than 4 years late, keep records for 15 months after submission. See [Business records if you're self-employed](https://www.gov.uk/self-employed-records/how-long-to-keep-your-records).
+- [x] Defer receipt attachments, bank feeds, and external record-keeping integrations from the first release; revisit if the scope changes.
+- [ ] Validate per-category allowable/disallowable treatment, restricted finance costs, and cash-versus-traditional accounting behavior for record aggregation and annual adjustments.
 - [ ] Define foreign-currency record behavior. Recommended design: retain the original amount/currency plus the sterling amount, exchange rate, rate date, and rate source/method used. HMRC business guidance says spot rates at initial recognition are generally used under the cited accounting standard, and average rates can be used if rates do not fluctuate significantly; confirm the appropriate treatment for each supported accounting basis and property income before implementation.
 - [ ] Define post-submission corrections: preserve the exact submitted snapshot; correct the underlying digital records and carry the correction into the next applicable cumulative update. HMRC says corrections to digital records are included in a next update and that the fourth update may need to be resent before year-end adjustments.
-- [x] Verify the GOV.UK retention rule for sole-trader business records: generally keep them for at least 5 years after the 31 January submission deadline for the relevant tax year; if the return is more than 4 years late, keep records for 15 months after submission. See [Business records if you're self-employed](https://www.gov.uk/self-employed-records/how-long-to-keep-your-records).
 - [ ] Confirm the corresponding retention rule for UK and foreign property records and any differences under the MTD digital-obligations regulations before setting one product-wide deletion policy.
-- [x] Defer receipt attachments, bank feeds, and external record-keeping integrations from the first release; revisit if the scope changes.
 
 **Exit criteria:** decisions and verified requirements are written down; open legal/contract questions are not presented as confirmed rules.
 
@@ -73,28 +77,33 @@ Tax-year boundary: Self Employment Business v5.0 and Property Business v6.0 cumu
 
 HMRC's 2026–27 release also documents an optional `adjustmentToProfitsForClass4` change on self-employment annual submissions; this is an annual adjustment field, not a new digital transaction category. Property Business API contract changes must be rechecked before implementation and release.
 
-## Phase 2 — Secure data and persistence design
+## Phase 2 — Secure data and persistence design - 10/17 COMPLETED
 
 - [x] Inspect the existing `users` table schema and identify `users.id` as the primary key. New record/business rows should reference this key; resolve the authenticated Auth0 identity on the server and never accept a submitted user ID as authority.
 - [x] Confirmed deployed `DB_CONNECTION_STRING` uses the stated Supabase project and the desired first-login provisioning behavior.
 - [x] Implement idempotent Auth0 `sub` lookup/upsert from the account page, HMRC authorization flow, and authenticated profile routes.
 - [x] Update current profile and cookie-preference database routes to derive user identity from the Auth0 server session rather than client-supplied `sub` or `id`; future record endpoints must use the same pattern.
+- [x] Add `public.hmrc_user_tokens` for per-user cross-device authorization, with ciphertext, IV, key version, expiry, authorization status, and timestamps. AES-256-GCM encryption occurs in the application, using `HMRC_TOKEN_ENCRYPTION_KEY` from deployment secrets; tokens are never returned to browser code or ordinary profile/export responses.
+- [x] Serialize refresh-token rotation using a PostgreSQL row lock; refreshes are initiated by all user-restricted HMRC API routes when the access token is within 60 seconds of expiry, and the refresh route uses the same helper.
+- [x] Capture the existing token table and `users` table in [`supabase/migrations/20261107014720_baseline.sql`](./supabase/migrations/20261107014720_baseline.sql). The original token-table SQL is retained in [`supabase/archive`](./supabase/archive/20261106140000_create_hmrc_user_tokens.sql) as historical reference only.
+- [x] Reconcile Supabase CLI migration tracking; the baseline is recorded remotely.
+- [x] Generate and configure a base64-encoded 32-byte key as `HMRC_TOKEN_ENCRYPTION_KEY` in this development environment's ignored `.env`.
+- [x] Configure the same key on the Raspberry Pi, as confirmed by the operator.
 - [ ] Design a Supabase CLI migration strategy for the existing PostgreSQL database, including baseline/synchronization of the pre-existing remote schema, migration ordering, rollback/recovery, constraints, indexes, and deployment procedure. Supabase warns against changing the remote schema outside migrations after migration tracking is established.
 - [ ] Define the minimum data model for:
   - An Auth0 `sub` link to the existing `users.id`, with idempotent first-login provisioning.
   - HMRC connection status and authorization timestamps on the user record (for example, `not_linked`, `connected`, `reauthorization_required`, `hmrc_linked_at`, and `hmrc_last_refreshed_at`); keep this separate from Auth0 app authentication.
-  - [x] Add `public.hmrc_user_tokens` for per-user cross-device authorization, with ciphertext, IV, key version, expiry, authorization status, and timestamps. AES-256-GCM encryption occurs in the application, using `HMRC_TOKEN_ENCRYPTION_KEY` from deployment secrets; tokens are never returned to browser code or ordinary profile/export responses.
-  - [x] Serialize refresh-token rotation using a PostgreSQL row lock; refreshes are initiated by all user-restricted HMRC API routes when the access token is within 60 seconds of expiry, and the refresh route uses the same helper.
   - Businesses/sources associated with the authenticated user and HMRC business identifier: self-employment, UK property, and foreign property.
   - Records associated with one source/business and tax year, containing verified required fields and category; foreign-currency records also retain conversion provenance.
   - Individual foreign properties as separate record groupings, with their figures aggregated into the customer's foreign-property business update as HMRC requires; do not model each overseas property as a separate HMRC business.
   - Record changes/history, including who changed a record and when.
   - CSV import batches and row-level outcomes, if import is in scope.
   - Quarterly submission snapshots/metadata linking submitted totals to the record versions and explicit adjustments used.
-- [ ] Define data validation and money representation (including rounding and conversion at HMRC API boundaries) and test it before persistence.
+- [ ] Define data validation and money representation (including rounding and conversion at HMRC API boundaries) before persistence.
 - [ ] Add server-side types, category mapping, tax-year/period helpers, and validation reused by routes and submission calculations.
 - [ ] Ensure access control, backups, encryption, and logging practices are appropriate for financial and potentially personal data.
-- [ ] Before production records are entered, provide a recovery path. Supabase's [backup guidance](https://supabase.com/docs/guides/platform/backups) recommends regular CLI database dumps and off-site backups for Free projects; arrange protected storage, automation, retention, and restore tests. Do not store production dumps in the source repository.
+- [ ] Before production records are entered, provide a recovery path. Supabase's [backup guidance](https://supabase.com/docs/guides/platform/backups) recommends regular CLI database dumps and off-site backups for Free projects; arrange protected storage, automation, and retention. Do not store production dumps in the source repository.
+- [ ] Ensure any other server environments using this token table use the same key. Do not commit it or replace it without first re-encrypting stored tokens.
 
 **Exit criteria:** a reviewed schema and migration plan exist; cross-user access is prevented by server-side checks and tests.
 
@@ -102,38 +111,20 @@ Supabase migration reference: [Deploy database migrations](https://supabase.com/
 
 HMRC OAuth reference: [User-restricted endpoints](https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints). HMRC states access tokens last 4 hours, refresh tokens are single-use, and refresh tokens stop working after 18 months, after which the customer must authorize again. The app does not force relinking at every Auth0 login: tokens are associated with the authenticated database user, encrypted in the app, and refreshed server-side. If HMRC rejects a refresh with `invalid_grant`, the user must authorize again. The exact interpretation of HMRC's 18-month lifetime is not inferred by the app. The old browser-cookie-only token flow is removed; an existing cookie-only connection may require a one-time relink after applying the migration and configuring the encryption key. The current callback no longer reuses an old access token when exchanging a new authorization code.
 
-**Auth/token deployment prerequisites (code is present; operational verification remains open):**
-
-- [x] Capture the existing token table and `users` table in [`supabase/migrations/20261107014720_baseline.sql`](./supabase/migrations/20261107014720_baseline.sql). The original token-table SQL is retained in [`supabase/archive`](./supabase/archive/20261106140000_create_hmrc_user_tokens.sql) as historical reference only.
-- [x] Verify the connected database contains the token table with the migration's columns, constraints, row-level security and API-role permissions, without changing or dropping `users`.
-- [x] Reconcile Supabase CLI migration tracking; the baseline is recorded remotely, the shadow database schema diff is clean, and a push dry run reports no pending migrations.
-- [x] Generate and configure a base64-encoded 32-byte key as `HMRC_TOKEN_ENCRYPTION_KEY` in this development environment's ignored `.env`.
-- [x] Configure the same key on the Raspberry Pi, as confirmed by the operator.
-- [ ] Ensure any other server environments using this token table use the same key. Do not commit it or replace it without first re-encrypting stored tokens.
-- [x] Verify an existing HMRC Sandbox connection and business list are available on a second browser/device without relinking, as confirmed by the operator.
-- [x] Verify a forced Sandbox token refresh succeeds and the business list remains available afterwards, as confirmed by the operator.
-- [x] Verify the existing Sandbox connection and business list remain available after more than four hours of inactivity across devices, as confirmed by the operator.
-- [x] Verify the observable first-sign-in and new HMRC Sandbox link journey: a new app account initially appeared unlinked, then linked and loaded its business list, as confirmed by the operator.
-- [x] Verify both app accounts display their respective email, saved NI number and linked status when switching accounts, as confirmed by the operator. This does not independently verify the HMRC identity associated with either token or financial-data isolation.
-- [x] Verify that declining a new Sandbox authorization shows an error while the previous connection and business list remain available, as confirmed by the operator.
-- [ ] Independently verify first-login database-row creation and the HMRC identity associated with the new link without exposing credentials or tokens.
-- [ ] Verify invalid-grant refresh failure and relink status against HMRC Sandbox using a confirmed safe scenario. A declined authorization does not exercise this case. Existing cookie-only links may need one-time reauthorization.
-
-## Phase 3 — Record creation, review, correction, and history
+## Phase 3 — Record creation, review, correction, and history - 2/8 COMPLETED
 
 - [x] Implement authenticated create, list, detail, update/correction, and archive operations using same-origin server routes. The schema is applied; database-backed route verification remains open.
+- [x] Set the recent-activity display limit to 50 entries. This is only a UI/history-feed limit, not a retention limit.
 - [ ] Validate every field at the server boundary, including ownership/business relationship, dates, tax year, category, amount, and correction rules.
 - [ ] Provide pagination and filters for business, tax year, date/period, category, and status so users can find older records.
 - [ ] Retain user-visible history for record creation, edits, archive/deletion, import, and submission association. Make changes and their timestamps understandable without exposing internal credentials or unrelated users' data.
-- [x] Set the recent-activity display limit to 50 entries. This is only a UI/history-feed limit, not a retention limit.
 - [ ] Keep the recent-activity limit separate from underlying accounting records and immutable submission snapshots; do not clear a submitted record or its source snapshot at session end.
 - [ ] Preserve the version of each record used for a submission; an edit must not silently rewrite history or change what the app says was sent to HMRC.
 - [ ] Design failed-save and conflict behavior so a user is told when a change did not persist; avoid success-shaped responses for failed writes.
-- [ ] Test ownership checks for list, read, update, delete, history, import, and export operations.
 
 **Exit criteria:** a signed-in user can securely create and review records over time, and can understand changes to their own records.
 
-## Phase 4 — CSV import and user export
+## Phase 4 — CSV import and user export - 7/8 COMPLETED
 
 - [x] Define and publish a CSV import template with example rows, date/amount formats, category values, and supported encoding.
 - [x] Implement import preview before commit. Validate every row and report row-specific errors without partially importing an unclear result.
@@ -141,13 +132,12 @@ HMRC OAuth reference: [User-restricted endpoints](https://developer.service.hmrc
 - [x] Record the user's preference for CSV exports; JSON is not currently requested.
 - [x] Implement an easy-to-find CSV export. Include records and available record history and submission metadata; document intentionally excluded data. Submission links will remain empty until their integration is implemented.
 - [x] Support useful business and tax-year filters without implying that a filtered export is a complete account export.
-- [x] Scope exports to the authenticated user and stream escaped UTF-8 CSV using a consistent database snapshot. Automated tests cover pagination, scoping, escaping and failure handling with mocked database responses; database-fixture verification remains open below.
+- [x] Scope exports to the authenticated user and stream escaped UTF-8 CSV using a consistent database snapshot. Mocked and database-fixture verification is tracked in [testing.md](./testing.md).
 - [ ] Provide an account-closure/export path and decide how long exports remain available and how records are handled afterwards, consistent with verified legal requirements.
-- [ ] Test export completeness against database fixtures, filters, special characters, empty results, large exports, and cross-user isolation.
 
 **Exit criteria:** users can preview/import supported records and can independently download a complete, intelligible export of their records and relevant history.
 
-## Phase 5 — Connect records to quarterly reporting
+## Phase 5 — Connect records to quarterly reporting - 0/6 COMPLETED
 
 - [ ] Implement server-side period totals from saved records for the selected business and tax year using the verified HMRC field mapping.
 - [ ] Define an explicit and audited adjustment mechanism if users must change calculated totals without editing source records.
@@ -155,11 +145,10 @@ HMRC OAuth reference: [User-restricted endpoints](https://developer.service.hmrc
 - [ ] Persist a submission snapshot before/around the HMRC request so the exact payload and source record versions remain traceable. Record the HMRC result/status and safe correlation metadata after the call.
 - [ ] Handle upstream timeouts and uncertain outcomes without losing the submission intent or encouraging unsafe duplicate submissions. Confirm HMRC retry/idempotency behavior against its current contract.
 - [ ] Preserve the source records and the original submitted snapshot when later corrections are made; explain how corrected information is handled in the next applicable update.
-- [ ] Test totals, tax-year boundaries, multiple businesses, empty periods, corrections, retries, HMRC validation errors, and responses that cannot be confirmed.
 
 **Exit criteria:** every quarterly total can be explained from saved records and explicit adjustments, and the user can see what was submitted and its outcome.
 
-## Phase 6 — User experience and guidance
+## Phase 6 — User experience and guidance - 0/6 COMPLETED
 
 - [ ] Add a records area to the account experience for list/search/filter, details, add/edit/correct, import, export, and record history.
 - [ ] Clearly identify records already associated with a submission and distinguish submitted values from later changes.
@@ -170,26 +159,21 @@ HMRC OAuth reference: [User-restricted endpoints](https://developer.service.hmrc
 
 **Exit criteria:** users can complete the record workflow without relying on undocumented internal steps or confusing unsaved values with persisted records.
 
-## Phase 7 — Privacy, retention, and operations
+## Phase 7 — Privacy, retention, and operations - 1/7 COMPLETED
 
+- [x] Configure and document encrypted daily USB backups for the application's Supabase data. The [backup guide](./ops/README.md) records the scope and operational limitations.
 - [ ] Complete a data inventory and review privacy notice, terms, lawful basis, third-party data in descriptions/counterparty fields, processor/subprocessor information, and any applicable DPIA or regulatory checks.
 - [ ] Publish a retention period only after verifying the applicable statutory rules; implement retention, deletion, account closure, and restriction behavior consistently with that review.
 - [ ] Define how user access/export requests, correction requests, and deletion requests are handled, including any records that must be retained.
-- [ ] Configure and document backup and restore for the actual database provider; test restore and data integrity rather than assuming backups are sufficient.
+- [ ] Establish and document the database recovery procedure for the actual provider; restore verification is tracked in [testing.md](./testing.md).
 - [ ] Add privacy-conscious monitoring, access auditing, incident handling, and support procedures. Do not log access tokens or unnecessary taxpayer/record content.
 - [ ] Confirm hosting region, data transfers, encryption, access controls, and recovery objectives before production.
 
 **Exit criteria:** users receive accurate disclosures, retention and deletion are based on verified requirements, and record recovery has been tested.
 
-## Phase 8 — Verification and release
+## Phase 8 — Verification and release - TRACKED IN TESTING PLAN
 
-- [ ] Add unit tests for field/category validation, money calculations, tax-year and period boundaries, totals, record versioning, and export serialization.
-- [ ] Add route tests for authentication, per-user/per-business isolation, validation, import, history, export, persistence failures, and submission snapshots.
-- [ ] Add end-to-end coverage: create/import records → review them and history → calculate quarterly totals → submit in Sandbox → view submission outcome → export records/history.
-- [ ] Check that failed database writes, HMRC failures, and partial imports are reported accurately and do not appear successful.
-- [ ] Run TypeScript checks, relevant unit/route/e2e tests, and a production build.
-- [ ] Complete security, privacy, retention, backup/restore, support, and accessibility reviews before launch.
-- [ ] Verify current HMRC production access and approval requirements separately; keep Sandbox and Production environments isolated.
+The test cases, release checks, and their dependencies are tracked in [testing.md](./testing.md).
 
 **Definition of done:** users can maintain, review, and export their own records; the quarterly flow uses traceable saved data; automated and Sandbox tests pass; operational and legal decisions are complete; production claims match actual approval and coverage.
 
