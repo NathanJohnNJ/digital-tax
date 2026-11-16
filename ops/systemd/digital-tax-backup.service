@@ -1,0 +1,9 @@
+[Unit]
+Description=Encrypted Digital Tax database backup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/digital-tax-backup/config
+ExecStart=/usr/local/sbin/digital-tax-backup

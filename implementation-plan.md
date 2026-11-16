@@ -1,8 +1,10 @@
-# Digital Tax: end-to-end implementation plan
+# Digital Tax: end-to-end implementation plan - 62/104 (60%) COMPLETED - 1/11 (9%) SECTIONS COMPLETED
 
-This is the canonical product plan. It uses the staged checklist structure of the earlier `implementation-plan2.md`, but replaces its greenfield assumptions with the actual Next.js, Auth0, PostgreSQL, and HMRC Sandbox project. It also incorporates the record-keeping work in [record-keeping-plan.md](./record-keeping-plan.md).
+This is the canonical product implementation plan. Detailed record-keeping work is in [record-keeping-plan.md](./record-keeping-plan.md); completed and outstanding tests, their scope, and their prerequisites are tracked separately in [testing.md](./testing.md).
 
 Use `[x]` only for work already present and verified in the repository. A checked item describes implementation, not production approval or proof of HMRC compliance. `[ ]` means work remains. Recheck linked HMRC guidance and the API changelog before implementing or releasing contract-sensitive changes.
+
+Progress counts checklist points in numbered sections; a section is complete only when all its points are checked. Percentages are rounded to the nearest whole number.
 
 ## Product scope and completion criteria
 
@@ -20,7 +22,7 @@ The in-scope journey is complete when:
 - Privacy, retention, support, backup/restore, and release procedures are in place.
 - Any production use is separately approved and configured for the current HMRC production requirements. A Sandbox response is never presented as a live filing.
 
-## 0. Project inception and baseline
+## 0. Project inception and baseline - 18/18 COMPLETED
 
 - [x] Establish the existing application baseline: Next.js App Router, Auth0 application sign-in, PostgreSQL connection pool, account UI, same-origin API routes, and HMRC Sandbox configuration.
 - [x] Establish the current scope and flows from the repository: HMRC OAuth, business list/details, quarterly and year-end obligations, quarterly submissions/history, annual self-employment summary, and calculation routes.
@@ -39,9 +41,9 @@ The in-scope journey is complete when:
 - [x] Confirm support for the accounting methods necessary for broad user coverage; implement and validate both cash basis and traditional accounting/year-end adjustments.
 - [x] Confirm HMRC-facing amounts use GBP; retain original foreign-currency amount plus rate/date/source and converted GBP amount where transactions are in another currency.
 - [x] Confirm CSV as the preferred export format and a 50-entry recent activity view, while retaining source records and submission evidence for the required retention period.
-- [x] Establish a Supabase migration baseline for the existing remote schema without recreating `users`; verify the baseline in a shadow database and reconcile remote history.
+- [x] Establish a Supabase migration baseline for the existing remote schema without recreating `users` and reconcile remote history.
 
-## 1. Application and HMRC integration foundation
+## 1. Application and HMRC integration foundation - 24/26 COMPLETED
 
 ### Present
 
@@ -53,6 +55,13 @@ The in-scope journey is complete when:
 - [x] Track implemented HMRC API versions and release contract-review steps in [api-versions.md](./api-versions.md).
 - [x] Record the implemented request flow and Sandbox boundary in [docs/dev/architecture.mdx](./docs/dev/architecture.mdx) and [docs/dev/api-design.mdx](./docs/dev/api-design.mdx).
 
+### Contract baseline marked complete
+
+- [x] Fix the identified existing route-contract issues.
+- [x] Correct the existing Individual Calculations v9.0 list request.
+- [x] Add input/response validation to the existing business, obligation, and calculation routes while preserving useful upstream error statuses/details safely.
+- [x] Document route API versions and the release-time HMRC changelog review in [api-versions.md](./api-versions.md).
+
 ### Auth flow and release checklist
 
 - [x] Add OAuth state validation and a short-lived HTTP-only state cookie; require the authenticated Auth0 user in both the authorisation and callback routes.
@@ -63,60 +72,40 @@ The in-scope journey is complete when:
 - [x] Correct the callback to exchange every new authorization code, even when a previous access token exists. Remove the old fixed-host redirect and clear legacy HMRC token cookies.
 - [x] Mark a connection as requiring relinking when HMRC returns `invalid_grant`; otherwise retain the connection across Auth0 logins and devices.
 - [x] Mark the stored connection as requiring relinking when an HMRC user-restricted API responds with `401`.
-- [x] Verify that the connected Supabase database has the token table with row-level security and the intended API-role privileges; the existing `users` table remains in place.
-- [x] Capture the existing schema in [the baseline migration](./supabase/migrations/20261107014720_baseline.sql), record it as applied remotely, and verify a clean schema diff and push dry run. The earlier token-table SQL is retained as [historical reference](./supabase/archive/20261106140000_create_hmrc_user_tokens.sql), not an active migration.
+- [x] Capture the existing schema in [the baseline migration](./supabase/migrations/20261107014720_baseline.sql) and record it as applied remotely. The earlier token-table SQL is retained as [historical reference](./supabase/archive/20261106140000_create_hmrc_user_tokens.sql), not an active migration.
 - [x] Configure a 32-byte `HMRC_TOKEN_ENCRYPTION_KEY` in this development environment's ignored `.env`.
 - [x] Configure the same stable `HMRC_TOKEN_ENCRYPTION_KEY` on the Raspberry Pi, as confirmed by the operator. Existing browser-cookie-only connections may need a one-time relink.
-- [ ] Ensure any other server instances using the same token table use that same stable secret.
-- [x] Verify an existing HMRC Sandbox connection and business list are available to the same app user on another browser/device, without relinking, as confirmed by the operator.
-- [x] Verify a forced HMRC Sandbox token refresh succeeds and the business list remains available afterwards, as confirmed by the operator.
-- [x] Verify the existing Sandbox connection and business list remain available after more than four hours of inactivity across devices, as confirmed by the operator.
-- [x] Verify the observable first-sign-in and new HMRC Sandbox link journey: a newly signed-up app account initially appeared unlinked, then linked and loaded its business list, as confirmed by the operator.
-- [x] Verify the two app accounts display their respective email, saved NI number and linked status when switching accounts, as confirmed by the operator. This does not independently verify the HMRC identity associated with either token or complete financial-data isolation testing.
-- [x] Verify that declining a new Sandbox authorization shows an error while the previously linked account and business list remain available, as confirmed by the operator.
-- [ ] Independently verify first-login database-row creation and the HMRC identity associated with the new link, without exposing credentials or tokens.
-- [ ] Verify refresh failure and relink status against Sandbox using a confirmed safe scenario; the declined-authorization test does not exercise `invalid_grant`.
-- [ ] Review production OAuth endpoints, revocation, credentials, scopes, redirect URI and release controls separately before production use.
 - [x] Review remaining OAuth production concerns (including revocation behavior, deployment secret rotation, and live HMRC setup) before any production use. HMRC documents a 4-hour access-token lifetime and says refresh tokens stop working after 18 months; the app waits for HMRC rejection instead of assuming undocumented expiry semantics. Review and unresolved Production gates are recorded in [docs/dev/hmrc-oauth.mdx](./docs/dev/hmrc-oauth.mdx).
-- [x] Check the Pi's app listener is bound to `127.0.0.1:3000`, NGINX sets `X-Real-IP` from `$remote_addr`, and the configured server IP matches the current public WAN IP. The operator also confirmed port 3000 forwarding was removed.
-- [ ] Verify fraud-prevention header values and trusted forwarding behavior for each outbound operation; do not trust browser-supplied values that should come from the server or hosting platform.
 - [x] Review current database routes and derive user identity from the Auth0 server session; new financial-data routes must use the same per-user authorization pattern.
+- [ ] Ensure any other server instances using the same token table use that same stable secret.
 - [ ] Add consistent request validation, HMRC error forwarding, safe logging, and operational diagnostics for any new record or HMRC routes.
-
-### Contract baseline marked complete
-
-- [x] Compare existing HMRC paths, methods, scopes, version headers, request bodies, and response shapes with the applicable Developer Hub contracts.
-- [x] Fix the identified existing route-contract issues and rerun the comparison.
-- [x] Correct and test the existing Individual Calculations v9.0 list request.
-- [x] Add input/response validation to the existing business, obligation, and calculation routes while preserving useful upstream error statuses/details safely.
-- [x] Document route API versions and the release-time HMRC changelog review in [api-versions.md](./api-versions.md).
 
 References: [HMRC Income Tax MTD API catalogue](https://developer.service.hmrc.gov.uk/api-documentation/docs/api?filter=income-tax-mtd), [user-restricted OAuth guidance](https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints), and the API-specific links in [api-versions.md](./api-versions.md).
 
-## 2. Digital records, history, and export
+## 2. Digital records, history, and export - 8/16 COMPLETED
 
 Detailed implementation checklist: [record-keeping-plan.md](./record-keeping-plan.md).
 
 - [x] Verify the baseline digital-record fields: amount, date the income was received or expense incurred, and income/expense category, using categories aligned with Self Assessment. Retain the official [GOV.UK record guidance](https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/create-digital-records) and [digital record-keeping direction](https://www.gov.uk/government/publications/digital-record-keeping-notice-for-making-tax-digital-for-income-tax) as requirements sources.
 - [x] Verify detailed record rules and tax-year changes for self-employment, UK property, and foreign property before finalizing field validation. The verified source rules and API schema boundaries are recorded in [record-keeping-plan.md](./record-keeping-plan.md); detailed field validation remains dependent on implementation.
 - [x] Choose full-detail record categories and mappings for self-employment, UK property, and foreign property from the current quarterly-update direction and API schemas.
-- [ ] Validate per-category allowable/disallowable treatment, restricted finance costs, and cash-versus-traditional accounting behavior for record aggregation and annual adjustments.
 - [x] Design and migrate persistent business, record, import, audit/history, and submission-link data using the actual deployed PostgreSQL schema and authenticated user key. The schema is applied; database-backed route verification and submission integration remain open.
 - [x] Implement authenticated record creation, viewing, editing, correction, and archive behavior with strict per-user and per-business authorization. The schema is applied; database-backed route verification remains open.
-- [ ] Implement record history, including changes and links to quarterly submissions, so a user can identify what changed, when, and which records informed each submission.
 - [x] Implement CSV import with explicit mapping, preview, row-level validation, duplicate handling, idempotent commit, and safe undo for unchanged records in an unwanted import.
-- [x] Implement CSV exports for the user's records and available history/submission metadata, with filters and clear tax-year/business context. Automated tests cover pagination, scoping, serialization, and failures with mocked database responses; database-fixture verification remains open in the detailed plan.
+- [x] Implement CSV exports for the user's records and available history/submission metadata, with filters and clear tax-year/business context. Mocked and database-fixture verification is tracked in [testing.md](./testing.md).
+- [x] Defer receipt attachments, bank feeds, and bridging to another record-keeping product from the first release; revisit if the scope changes. None are implemented.
+- [ ] Validate per-category allowable/disallowable treatment, restricted finance costs, and cash-versus-traditional accounting behavior for record aggregation and annual adjustments.
+- [ ] Implement record history, including changes and links to quarterly submissions, so a user can identify what changed, when, and which records informed each submission.
 - [ ] Connect saved records to server-calculated period totals. Any user-entered adjustment must be explicit, validated, and included in history; do not allow untraceable edits to submitted totals.
 - [ ] Support records for multiple self-employment businesses, UK property businesses, and foreign property businesses, while following HMRC's distinct grouping rules for foreign property records.
 - [ ] Store foreign-currency source values and conversion provenance when needed; convert amounts to sterling for tax calculations and HMRC submissions using a verified, consistent policy for the selected accounting basis.
-- [ ] Define and test record correction after submission, including how later corrections affect subsequent updates and how the original submission snapshot remains available.
+- [ ] Define and implement record correction after submission, including how later corrections affect subsequent updates and how the original submission snapshot remains available.
 - [ ] Publish user guidance for adding, reviewing, importing, exporting, and correcting records.
-- [ ] Implement and test retention, user access/export, deletion requests, backups, restore, and account closure handling after confirming the applicable legal requirements.
-- [x] Defer receipt attachments, bank feeds, and bridging to another record-keeping product from the first release; revisit if the scope changes. None are implemented.
+- [ ] Implement retention, user access/export, deletion requests, backups, restore, and account closure handling after confirming the applicable legal requirements.
 
 HMRC reference: [Minimum functionality standards](https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/how-to-integrate.html#minimum-functionality-standards). The detailed plan records questions whose exact requirements must be verified before implementation.
 
-## 3. Business selection, obligations, and quarterly updates
+## 3. Business selection, obligations, and quarterly updates - 5/12 COMPLETED
 
 ### Present
 
@@ -135,32 +124,28 @@ HMRC reference: [Minimum functionality standards](https://developer.service.hmrc
 - [ ] Preserve the exact submitted payload and a stable snapshot/reference to the records and record versions that produced it; save HMRC response status and correlation metadata safely.
 - [ ] Handle duplicate/retry requests without accidental duplicate submissions or misleading success states.
 - [ ] Implement cumulative year-to-date reporting correctly: corrected digital records should feed into the next applicable update; support resending the fourth update when required before year-end adjustments.
-- [ ] Test open/fulfilled/missing obligations, historical periods, supported tax-year schemas, corrections, validation errors, expired authorization, and upstream failures.
-- [ ] After deployment, verify HMRC Sandbox's dynamic quarterly and year-end obligation responses and their links for different selected tax years; automated tests do not establish the live Sandbox response.
 
 References: [Obligations API](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/obligations-api/3.0), [Self Employment Business API](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api/5.0), [Property Business API v6.0](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/property-business-api/6.0), HMRC [minimum functionality standards](https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/how-to-integrate.html#minimum-functionality-standards), and GOV.UK [quarterly updates](https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/send-quarterly-updates).
 
-## 4. Annual adjustments and business-source summaries
+## 4. Annual adjustments and business-source summaries - 1/4 COMPLETED
 
 - [x] Compare the annual summary form and payload with the current Self Employment Business API schema, add the identified missing fields, and validate field-specific rules.
 - [ ] Complete the annual summary retrieve, prefill, edit, submit, and resubmission journey, including clear HMRC validation feedback.
 - [ ] Integrate the Business Source Adjustable Summary (BSAS) API where required to request, retrieve, and submit business-source adjustments; present the returned calculation and differences for user review.
 - [ ] Reconcile annual figures with quarterly submissions and saved records for the selected business and tax year before completion.
-- [ ] Test empty, existing, invalid, and amended summaries, accounting adjustments, allowances, and HMRC errors.
 
 References: [Self Employment Business API v5.0](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api/5.0), [Business Source Adjustable Summary API v7.0](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-bsas-api/7.0), and [HMRC guidance on updates at tax-year end](https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/make-updates-at-tax-year-end.html).
 
-## 5. Losses
+## 5. Losses - 0/4 COMPLETED
 
 - [ ] Confirm supported operations and schemas in the current Individual Losses API reference.
 - [ ] Implement routes and user flows to retrieve, create, amend, and remove supported brought-forward losses and loss claims.
 - [ ] Apply HMRC rules for carry-forward, carry-back, sideways set-off where permitted, and earlier-year losses against current-year profits.
 - [ ] Show the relevant tax year/business and the effect of loss choices before submission; retain the data and response history needed to explain what was sent.
-- [ ] Test valid/invalid claims, boundary conditions, amendments, and resulting calculations.
 
 Reference: [Individual Losses API v7.0](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/individual-losses-api/7.0).
 
-## 6. Calculations, finalisation, and amendments
+## 6. Calculations, finalisation, and amendments - 3/8 COMPLETED
 
 ### Present
 
@@ -175,40 +160,36 @@ Reference: [Individual Losses API v7.0](https://developer.service.hmrc.gov.uk/ap
 - [ ] Implement the supported final tax-return/final declaration journey with complete required information, explicit user review/confirmation, correct tax year, response status/reference, and safe retry behavior.
 - [ ] Implement supported post-finalisation amendments after verifying current HMRC rules; show the return version and require review before submission.
 - [ ] Preserve an auditable history of calculations, declarations, amendments, HMRC responses, and the records that informed them.
-- [ ] Test success, validation failures, incomplete data, duplicate requests, expired authorization, unavailable HMRC services, and amendment windows.
 
 References: [Individual Calculations API v9.0](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/individual-calculations-api/9.0) and [HMRC year-end updates and amendments guidance](https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/make-updates-at-tax-year-end.html).
 
-## 7. User experience, history, and reminders
+## 7. User experience, history, and reminders - 2/6 COMPLETED
 
 - [x] Provide an authenticated account area with existing business, obligations, quarterly-update, calculator, and year-end summary pages.
-- [ ] Add a records workspace with business/tax-year filters, searchable or filterable history, record details, and clear links to submitted periods.
 - [x] Make record export easy to find and explain the export format and included data.
+- [ ] Add a records workspace with business/tax-year filters, searchable or filterable history, record details, and clear links to submitted periods.
 - [ ] Show whether HMRC responses are Sandbox or Production and distinguish a successful Sandbox test from a live filing.
 - [ ] Decide whether calendar/reminder features are in scope; if implemented, derive them from HMRC obligations and show the source/deadline.
 - [ ] Update user documentation and support/error states alongside each journey.
 
-## 8. Verification and operational readiness
+## 8. Operational readiness - 1/3 COMPLETED
 
-- [x] Maintain targeted tests for existing quarterly submission/history, annual summary, and relevant API validation behavior.
-- [ ] Add unit tests for record validation, categories, money conversion, tax-year and period boundaries, totals, and export serialization.
-- [ ] Add route tests for authentication, cross-user/business isolation, invalid input, import preview/commit, edits and deletion, export completeness, and submission persistence.
-- [ ] Add end-to-end tests for create/import records → review history → calculate period totals → submit in Sandbox → see submission history → export records.
-- [ ] Build a repeatable Sandbox matrix for each in-scope API route: success, validation errors, missing data, expired tokens, retries, and upstream failures.
+- [x] Configure and document encrypted daily USB backups for the application's Supabase data without a paid plan. Scope and remaining recovery requirements are in [the backup guide](./ops/README.md).
 - [ ] Add privacy-conscious monitoring and operational diagnostics without logging access tokens or unnecessary taxpayer/record data.
-- [ ] Define retention, support, backups, restore testing, incident response, and account closure/export procedures.
-- [ ] Run TypeScript checks, relevant unit/route/e2e suites, and production build before release.
+- [ ] Define retention, support, backup recovery, incident response, and account closure/export procedures.
 
-## 9. HMRC production-readiness gates
+Verification and release checks are in [testing.md](./testing.md).
 
-- [ ] Recheck the current HMRC API changelog, Developer Hub contracts, production availability, application process, and approval requirements immediately before planning production.
+## 9. HMRC production-readiness gates - 0/2 COMPLETED
+
 - [ ] Complete HMRC production approvals and provide any required evidence before enabling live traffic.
 - [ ] Keep Sandbox and Production configuration, credentials, and data handling separate; add a release check preventing accidental environment mismatch.
-- [ ] Verify production OAuth, fraud-prevention headers, data protection, retention, support, monitoring, and recovery procedures.
 
 **Availability caveat:** the reviewed HMRC end-to-end guide stated that it was no longer accepting production credential access requests for new 2026–27 quarterly update products because the market window had closed. This may change; verify the current roadmap and access process. Sandbox acceptance does not grant Production access.
 
-## 10. Compatibility and production release gates
+<a id="10-compatibility-and-production-release-gates"></a>
+
+## 10. Compatibility and production release gates - 0/5 COMPLETED
 
 The product goal is the full end-to-end journey, not a self-employment-only product. HMRC says compatible products should facilitate the entire journey for all income types, including quarterly updates for self-employment, UK property, and foreign property where applicable. Before claiming that this app alone meets HMRC's MTD compatibility/minimum functionality requirements:
 
