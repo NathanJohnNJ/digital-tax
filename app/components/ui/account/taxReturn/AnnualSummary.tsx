@@ -546,7 +546,7 @@ export default function AnnualSummary({ nino, businessId, startDate, endDate }: 
           {message && <p role="status" className={message.kind === 'success' ? 'font-semibold text-green-700' : 'font-semibold text-red-700'}>{message.text}</p>}
 
           <button type="submit" disabled={saving} className="w-fit self-center rounded-lg bg-linear-to-tr from-blue-700 to-blue-400 px-4 py-2 font-semibold text-white shadow-sm hover:to-blue-500 disabled:cursor-not-allowed disabled:opacity-50">
-            {saving ? 'Saving...' : 'Save Annual Summary With HMRC'}
+            {saving ? 'Saving...' : 'Save annual summary with HMRC'}
           </button>
           </form>
         )}

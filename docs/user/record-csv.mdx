@@ -1,0 +1,112 @@
+## Digital records: CSV import and export
+
+**Availability:** The import and export screen and endpoints are in the current development code and will be available after deployment. The full records workspace has not yet been built. Saved records are not yet used to calculate or submit quarterly updates.
+
+### Prepare a spreadsheet
+
+Use one row per record and one file per business. Select an HMRC-verified business when importing; a business ID in the spreadsheet does not select or verify the business. The examples below are **illustrations**, not screenshots from a spreadsheet application.
+
+<a href="/examples/digital-records-template.csv" download="digital-records-template.csv" className="inline-block rounded-lg bg-blue-700 px-5 py-3 font-semibold text-white no-underline hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
+  Download blank CSV template
+</a>
+
+The template contains headers only. Add at least one record and fill the required fields below before importing. Leave optional columns blank when they do not apply; map the relevant columns explicitly when importing.
+
+![Illustration of a self-employment spreadsheet with a header row and income and expense entries](/images/csv-self-employment-example.svg)
+
+[Download the example self-employment CSV](/examples/self-employment-records.csv). Its rows use `turnover` and `adminCosts`, which are valid for self-employment income and expenses respectively. Replace the example data with your own; do not import the examples as real transactions.
+
+Save or download the sheet as **comma-separated CSV in UTF-8**, not as an Excel workbook. Set date cells to plain text or ISO format so the saved CSV contains `YYYY-MM-DD`; check the exported file, because spreadsheet display formatting can differ from its saved contents. Use a single header row with unique, non-empty column names. Quote fields containing commas, line breaks or double quotes; within a quoted field, double each double quote. Spreadsheet software normally does this when it exports CSV.
+
+The file may contain 1 to 5,000 data rows and up to 1,000,000 characters. Extra CSV columns are ignored unless mapped. Do not combine data for different businesses in one import.
+
+### Columns and mapping
+
+The importer requires a mapping from each record field to a distinct CSV header. The screen selects exact matching template headers as a starting point; review and change the mappings as needed. The example uses these exact field names as headers:
+
+| App field and example header | Required | Format and meaning |
+| --- | --- | --- |
+| `recordDate` | Yes | Real date as `YYYY-MM-DD`, e.g. `2026-04-08`. |
+| `recordType` | Yes | Exactly `income` or `expense`, in lower case. |
+| `category` | Yes | Exact, case-sensitive category code allowed for the selected business and record type; see the lists below. |
+| `description` | No | Optional text, up to 500 characters. |
+| `sourceAmount` | Yes | Non-zero signed decimal, up to 14 digits before and 4 after the decimal point. No currency symbol, grouping separator or spaces. |
+| `sourceCurrency` | Yes | Three uppercase letters, such as `GBP` or `EUR`. |
+| `amountGbp` | Yes | Non-zero signed sterling decimal, up to 14 digits before and 2 after the decimal point, without `£`. For GBP it must equal `sourceAmount`. |
+| `exchangeRate` | For non-GBP | Positive decimal: multiply the source amount by this rate to get GBP. Up to 10 digits before and 10 after the decimal point. |
+| `exchangeRateDate` | For non-GBP | Rate date as `YYYY-MM-DD`. |
+| `exchangeRateSource` | For non-GBP | Non-empty rate source or method, at most 120 characters. |
+| `foreignPropertyCountryCode` | For foreign property, unless a property ID is provided | Three-letter uppercase country code, e.g. `FRA`. Leave blank for other business types. |
+| `foreignPropertyId` | For foreign property, unless a country code is provided | Property UUID, if applicable. Leave blank for other business types. |
+
+For GBP records, leave exchange-rate columns empty or omit their mappings. For other currencies, the app checks that `sourceAmount × exchangeRate`, rounded to two decimal places, matches `amountGbp`. You are responsible for choosing an appropriate rate and retaining its source; the app has not yet established a verified tax policy for every accounting basis. Foreign-property IDs are not independently verified against HMRC property details. A country-only record is not sufficient evidence that it can be used in a 2026–27 foreign-property submission.
+
+![Illustration of a foreign-property spreadsheet showing a euro receipt, exchange rate and country code](/images/csv-foreign-property-example.svg)
+
+The second illustration shows `100.00 EUR × 0.85 = 85.00 GBP`, with rate date `2026-04-08` and source `Bank statement`. Use the correct category and property details for your own business.
+
+### Supported category codes
+
+These are the codes accepted by the current record validator, not a determination that an expense is allowable for tax. Categories are case-sensitive.
+
+| Business | Income | Expense |
+| --- | --- | --- |
+| Self-employment | `turnover`, `other` | `costOfGoods`, `paymentsToSubcontractors`, `wagesAndStaffCosts`, `carVanTravelExpenses`, `premisesRunningCosts`, `maintenanceCosts`, `adminCosts`, `businessEntertainmentCosts`, `advertisingCosts`, `interestOnBankOtherLoans`, `financeCharges`, `irrecoverableDebts`, `professionalFees`, `depreciation`, `otherExpenses` |
+| UK property | `periodAmount`, `otherIncome`, `premiumsOfLeaseGrant`, `reversePremiums` | `premisesRunningCosts`, `repairsAndMaintenance`, `financialCosts`, `professionalFees`, `costOfServices`, `travelCosts`, `other`, `residentialFinancialCost` |
+| Foreign property | `rentIncome`, `premiumsOfLeaseGrant`, `otherPropertyIncome` | `premisesRunningCosts`, `repairsAndMaintenance`, `financialCosts`, `professionalFees`, `travelCosts`, `costOfServices`, `other` |
+
+### Import in the app
+
+1. Sign in, link HMRC and load your businesses from your account. The current integration uses HMRC Sandbox.
+2. Select **Import records** in account navigation. Download the blank template if needed, fill in your records and save it as UTF-8 CSV.
+3. Choose the verified business and the CSV file. Review the column mappings, including the optional fields that apply to your records.
+4. Select **Preview import**. Correct any row errors in your CSV and choose the corrected file again. No records are saved by preview.
+5. Review the validated values across all preview pages. If existing records may be duplicates, check the listed CSV rows and confirm only if you want to import them anyway.
+6. Select **Import records** to save. Keep the displayed batch ID. If the result is uncertain, retry the same import without changing the file or mappings; the same batch can be retried without creating a second copy.
+
+The screen does not yet provide batch review or undo. The API operations below are available for those tasks.
+
+### Import using the API
+
+These steps require a signed-in session and a client capable of making same-origin JSON requests. They are intended for developers or testing.
+
+1. Link HMRC and load the business list in the app. The current integration uses HMRC Sandbox; select a business returned for that account.
+2. Call `GET /api/records/businesses` and use the selected entry's `recordBusinessId`, **not** `hmrcBusinessId`. Each import targets that one business.
+3. Send `POST /api/records/import` with `mode: "preview"`, the CSV file contents as `csvText`, and an explicit `columnMap`. For the downloadable example, use the following shape, replacing the UUID with your own record business ID:
+
+```json
+{
+  "mode": "preview",
+  "recordBusinessId": "11111111-1111-4111-8111-111111111111",
+  "csvText": "recordDate,recordType,category,description,sourceAmount,sourceCurrency,amountGbp\n2026-04-08,income,turnover,Customer invoice,125.50,GBP,125.50\n2026-04-09,expense,adminCosts,Office supplies,25.00,GBP,25.00\n",
+  "columnMap": {
+    "recordDate": "recordDate",
+    "recordType": "recordType",
+    "category": "category",
+    "description": "description",
+    "sourceAmount": "sourceAmount",
+    "sourceCurrency": "sourceCurrency",
+    "amountGbp": "amountGbp"
+  }
+}
+```
+
+For example, `"recordDate": "Date"` maps the app's date field to a CSV column named `Date`; headers can differ from the field names, but each mapping must use a distinct existing header. Map optional columns too when they contain relevant values.
+
+4. If preview returns `rowErrors`, correct the reported rows and preview again; the whole file is rejected on validation errors. The response includes validated rows and possible existing duplicate row numbers. Identical normalized rows within the file are rejected. Existing records matching date, type, category, source amount and currency are flagged as **possible** duplicates, not automatically discarded.
+5. To commit, send the same CSV, business ID and mapping with `mode: "commit"`, plus the `batchId` and `contentSha256` returned by preview. Only if you have reviewed and want to import possible duplicates, include `"confirmPossibleDuplicates": true`. Do not change the CSV or mapping between preview and commit. Retrying the same committed batch is idempotent.
+6. `GET /api/records/import/{batchId}` reviews a committed batch. To undo an unwanted import, send `DELETE` to that URL with JSON `{ "confirm": true }`: unchanged imported records are archived, while edited or already archived records are skipped and counted in the response.
+
+### Export in the app
+
+After deployment, sign in and open **Import records** in account navigation. Under **Export digital records**, select a business, a tax year in `YYYY-YY` format, or both, and select **Download records CSV**. Leave both filters blank for all businesses and all dates. Inactive businesses are available for export but cannot receive new imports. If the business list cannot be loaded, you can still download an unfiltered export.
+
+A filtered file is not a full account export. If the download fails or is interrupted, download it again; do not rely on an incomplete file.
+
+### Export using the current API
+
+After deployment, sign in and open `/api/records/export` on the same app origin to download all your records as CSV. Add `?taxYear=2026-27`, `?businessId=YOUR_RECORD_BUSINESS_ID`, or `?fromDate=2026-04-06&toDate=2027-04-05` to filter it. A business filter can be combined with a tax-year or date filter, but tax year and explicit dates cannot be combined. A filtered file is not a full account export.
+
+The export includes archived records, record-history JSON and available submission-reference metadata. Submission references will remain empty until submission linking is implemented. Import batches and complete HMRC submission payloads are not included. The export is not a database backup.
+
+Export headers use names such as `record_date` and `source_amount`; they are not the same as the import field names. To import selected exported records, map those headers explicitly, select one business, and review the rows carefully. Re-import creates new records; it does not restore the original IDs or history. Keep downloaded files private. Spreadsheet applications may interpret cells beginning with formula characters as formulas; treat an export as untrusted data and import text as text when opening it.

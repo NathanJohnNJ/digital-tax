@@ -1,60 +1,71 @@
 import { HMRC_CONFIG } from "@/config/hmrc";
+import { auth0 } from "@/lib/auth0";
+import { ensureAppUser } from "@/lib/appUser";
+import { saveHmrcTokens } from "@/lib/hmrcTokens";
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from 'next/headers';
-import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken'
+import { cookies } from "next/headers";
+import { requestUserAccessToken } from "@/app/actions/requestUserAccessToken";
+import { verifyHmrcOAuthStateCookie } from "@/lib/hmrcOAuthState";
+
+const STATE_COOKIE = "hmrc_oauth_state";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const code = req.nextUrl.searchParams.get('code');
   const authError = req.nextUrl.searchParams.get('error');
+  const returnedState = req.nextUrl.searchParams.get("state");
+  const savedState = cookieStore.get(STATE_COOKIE)?.value;
 
-  if (authError){
-    const errorDescription = req.nextUrl.searchParams.get('error_description');
-    const error_code = req.nextUrl.searchParams.get('error_code');
-    return Response.json({ error: `${authError} - ${error_code} \n ${errorDescription}`}, { status: 400})
+  if (!returnedState || !savedState) {
+    cookieStore.delete(STATE_COOKIE);
+    return Response.json({ error: "HMRC authorization state is missing. Please try linking again." }, { status: 400 });
+  }
+
+  const session = await auth0.getSession();
+  if (!session?.user?.sub) {
+    cookieStore.delete(STATE_COOKIE);
+    const appOrigin = new URL(HMRC_CONFIG.redirectUri).origin;
+    return NextResponse.redirect(new URL("/auth/login?returnTo=/account", appOrigin));
+  }
+
+  if (!verifyHmrcOAuthStateCookie(savedState, returnedState, session.user.sub)) {
+    cookieStore.delete(STATE_COOKIE);
+    return Response.json({ error: "HMRC authorization state did not match. Please try linking again." }, { status: 400 });
+  }
+
+  cookieStore.delete(STATE_COOKIE);
+  cookieStore.delete("access_token");
+  cookieStore.delete("refresh_token");
+  cookieStore.delete("code");
+
+  if (authError) {
+    const errorCode = req.nextUrl.searchParams.get("error_code");
+    console.error("HMRC authorization was denied", { error: authError, errorCode });
+    return Response.json({ error: "HMRC authorization was not completed. Please try linking again." }, { status: 400 });
   }
 
   if (!code) {
     return Response.json({ error: "Missing authorization code" }, { status: 400 });
   }
 
-  cookieStore.set('code', code, {
-    httpOnly: true,
-    secure: true,
-    maxAge: 600
-  });
-
-  const fullUrl = req.nextUrl;
-  let baseUrl = fullUrl.toString().slice(0, 22);
-  if (baseUrl !== 'http://localhost:3000/'){
-    baseUrl = "https://dt.njtd.xyz/"
-  }
-  
-  let token: string | undefined;
-  if(!cookieStore.has('access_token')){ 
-    const tokenResult = await requestUserAccessToken();
+  try {
+    const user = await ensureAppUser(session.user);
+    const tokenResult = await requestUserAccessToken(code);
     if (!tokenResult.ok) {
-      return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
+      console.error("HMRC authorization-code exchange failed", {
+        status: tokenResult.status,
+      });
+      return Response.json({ error: "HMRC could not complete authorization." }, { status: tokenResult.status });
     }
 
-    const options = {
-      httpOnly: true,
-      maxAge: tokenResult.tokens.expires_in,
-      secure: process.env.NODE_ENV === "production"
-    };
-    cookieStore.set('access_token', tokenResult.tokens.access_token, options);
-    if (tokenResult.tokens.refresh_token) {
-      cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
-    }
-    token = tokenResult.tokens.access_token;
-  } else {
-    token = cookieStore.get('access_token')?.value;
+    await saveHmrcTokens(user.id, tokenResult.tokens);
+  } catch (error) {
+    console.error("Unable to store HMRC authorization", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    return Response.json({ error: "Unable to securely save your HMRC authorization." }, { status: 500 });
   }
 
-  if (!token) {
-    return Response.json({ error: "Missing access token" }, { status: 401 });
-  }
-
-  return NextResponse.redirect(`${baseUrl}/account`);
+  const appOrigin = new URL(HMRC_CONFIG.redirectUri).origin;
+  return NextResponse.redirect(new URL("/account", appOrigin));
 }
-

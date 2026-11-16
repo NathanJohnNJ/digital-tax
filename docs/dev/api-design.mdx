@@ -11,10 +11,10 @@
 ### OAuth routes
 
 - `GET /api/hmrc/userRestrictedAuth/authorise` redirects the user to the HMRC sandbox authorisation page with the configured self-assessment read and write scopes.
-- `GET /api/hmrc/userRestrictedAuth/callback` handles the authorisation response, exchanges the code for tokens, sets token cookies, and redirects to the account page.
-- `GET /api/hmrc/userRestrictedAuth/refresh` exchanges a refresh token for new tokens.
+- `GET /api/hmrc/userRestrictedAuth/callback` validates the one-time state and signed-in Auth0 subject, exchanges each new code, stores encrypted tokens against the app user's database row, and redirects to the account page.
+- `GET /api/hmrc/userRestrictedAuth/refresh` checks the stored access-token expiry and refreshes when needed. User-restricted HMRC routes use the same token helper automatically.
 
-Application sign-in uses a separate Auth0 integration; it is not the HMRC OAuth flow.
+Application sign-in uses a separate Auth0 integration; it is not the HMRC OAuth flow. HMRC tokens are not stored in browser cookies or returned to the browser. The callback also provisions the app user idempotently using the Auth0 `sub`.
 
 <br></br>
 
@@ -36,6 +36,7 @@ These are POST routes that receive request data from the app and call correspond
 The route handlers validate request JSON, NINOs, business IDs, tax years, and calculation identifiers before calling HMRC. Successful HMRC responses are checked against the required response fields for Business Details v2.0, Obligations v3.0, and Individual Calculations v9.0; malformed success responses produce a safe `502` response. HMRC error status codes are preserved, with error codes and messages returned after removing request identifiers and credentials. Server logs contain status, correlation ID, and error codes only, not upstream response bodies or customer data.
 The quarterly update history route treats the documented Sandbox `MATCHING_RESOURCE_NOT_FOUND` summary/detail responses as no data and `NO_OBLIGATIONS_FOUND` as an empty obligations list. Other unsuccessful summary, obligations, or period-detail responses preserve HMRC's status and error details instead of returning partial history.
 The calculation-list route calls the Sandbox Individual Calculations v9.0 endpoint `GET /individuals/calculations/{nino}/self-assessment/{taxYear}` with `Accept: application/vnd.hmrc.9.0+json`. HMRC's optional `calculationType` query filter is omitted when listing all calculations.
+The quarterly and year-end obligations routes use HMRC Sandbox's `Gov-Test-Scenario: DYNAMIC` so simulated dates respond to the selected tax year. The quarterly dynamic scenario requires HMRC's documented test business IDs. This is Sandbox-only and must not be sent to a Production API. The quarterly update history route continues to use its existing Sandbox scenario.
 The API versions currently used by the HMRC routes, their Sandbox status, and the pre-release changelog review procedure are tracked in [`api-versions.md`](../../api-versions.md).
 
 <br></br>
@@ -54,9 +55,26 @@ These routes call HMRC's test API. The annual summary route does not implement a
 
 ---
 
+### Digital record routes
+
+These are same-origin application routes; they do not call HMRC directly. Record businesses are synchronized from the authenticated user's valid HMRC business-list response. A client cannot create a record against a free-form HMRC business ID.
+
+- `GET /api/records/businesses` lists the account's active synchronized HMRC businesses. `?includeInactive=true` also includes inactive businesses for export; the `isActive` field distinguishes them and inactive businesses cannot receive new records.
+- `GET /api/records` lists active records with `businessId`, `fromDate`, `toDate`, `limit`, and `offset` filters. `POST /api/records` creates a record for a verified business.
+- `GET /api/records/{recordId}` reads a record. `PATCH` updates it and `DELETE` archives it; both writes require the current version in an `If-Match` header. Each successful create, update, and archive adds a versioned history entry.
+- `GET /api/records/{recordId}/history` returns paginated record history and linked submission metadata. Use `offset` and `submissionOffset` independently with the returned `nextOffset` and `nextSubmissionOffset`; each page contains at most 100 entries. Submission links are populated only when the submission snapshot integration is implemented.
+- `POST /api/records/import` accepts `mode: "preview"` or `mode: "commit"`. Preview requires a CSV column map and returns validated rows, row counts, existing-duplicate warnings, a batch ID, and a content hash. Commit must submit the same content hash; invalid rows are rejected as a whole, possible existing duplicates require confirmation, and retrying an already committed batch is idempotent. `GET /api/records/import/{batchId}` reviews its row outcomes; `DELETE` with `{ "confirm": true }` archives unchanged records from an unwanted import and reports records it skipped because they were edited or already archived.
+- `GET /api/records/export` streams CSV with record history and submission-reference metadata from a read-only repeatable-read database snapshot. It includes archived records and supports a business ID combined with either a UK tax year or a date range. A filtered export is not a complete account export. The transaction holds a database connection until the download finishes or is cancelled.
+
+The digital-records migration has been applied to the linked Supabase project. Submission references remain empty until record-to-quarterly-submission snapshots are implemented. See the [CSV guide](/docs/user/record-csv) for file formats, categories, example mapping, and the current API-only workflow.
+
+<br></br>
+
+---
+
 ### Test and error behavior
 
-- `POST /api/hmrc/applicationRestrictedAuth/createTestUser` requests an HMRC sandbox test user.
+- `POST /api/hmrc/applicationRestrictedAuth/createTestUser` requests an HMRC Sandbox individual test user using Create Test User v1.0. The services-list action uses the same application-restricted API. Both call only `test-api.service.hmrc.gov.uk` with an application token and require a signed-in email in `TESTING_ALLOWED_USER_EMAILS` (comma-separated). Production-mode deployments also require the server-only `HMRC_ENABLE_SANDBOX_TEST_TOOLS=true` opt-in; it defaults to disabled. Configure these in the Pi's protected PM2 environment and restart the process with its updated environment. Do not expose the opt-in or credentials to the browser. The returned test-user password is sensitive; store it securely and do not share it.
 - `POST /api/hmrc/fraud/test` forwards fraud-prevention headers to HMRC Sandbox's `GET /test/fraud-prevention-headers/validate` endpoint.
 - HMRC errors are returned with an error message and, where available, the upstream status. Network failures are handled by the route, but response shapes are not yet a versioned public contract.
 

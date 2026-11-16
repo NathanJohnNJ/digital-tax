@@ -1,11 +1,10 @@
-export async function forwardHmrcResponse(response: Response, operation: string): Promise<Response> {
+export async function forwardHmrcResponse(response: Response, operation: string, logBody = true): Promise<Response> {
   const body = await response.text();
 
   if (!response.ok) {
-    console.error(`HMRC ${operation} failed`, {
-      status: response.status,
-      body: body || undefined,
-    });
+    console.error(`HMRC ${operation} failed`, logBody
+      ? { status: response.status, body: body || undefined }
+      : { status: response.status });
   }
 
   const headers = new Headers();

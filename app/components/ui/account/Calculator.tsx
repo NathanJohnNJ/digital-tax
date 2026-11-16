@@ -28,7 +28,7 @@ export default function Calculator(){
     const expanded = expandedTables[kind];
 
     return (
-      <div className={`min-w-0 rounded-lg border ${borderColor} shadow-md ${title === "Income" ? 'row-span-1' : title === "Expense" ? 'row-span-5' : 'row-span-4'}`}>
+      <div className={`min-w-0 rounded-lg border ${borderColor} shadow-md`}>
         <div className={`grid grid-cols-[1fr_2rem] items-center gap-2 p-3 border ${borderColor} border-b-2 rounded-t-lg w-full`}>
           <h3 className="text-center font-extrabold">{title}</h3>
           <button
@@ -98,7 +98,7 @@ export default function Calculator(){
             </div>
           ))}
           <div className={`flex items-center justify-end border rounded-b-lg ${borderColor} bg-gray-200/20 px-2 py-2`}>
-            <div className="flex items-center gap-3 mr-22">
+            <div className="flex items-center gap-3">
               <h4 className="font-bold text-gray-700">Total</h4>
               <p className="min-w-24 text-right font-extrabold text-gray-900">£{rowsTotal(rows).toFixed(2)}</p>
             </div>
@@ -111,7 +111,7 @@ export default function Calculator(){
   return (
     <div className="flex flex-col items-center">
       <button type="button" onClick={() => setShowCalculators(!showCalculators)} className="w-fit border-2 border-blue-500 rounded-xl px-3 py-1 mb-4 hover:scale-105 shadow-sm hover:shadow-lg font-medium">{showCalculators ? 'Hide Calculators' : 'Show Calculators'}</button>
-      {showCalculators && <div className="grid w-full items-start gap-4 grid-flow-col md:grid-cols-2 2xl:grid-cols-3 grid-rows-5">
+      {showCalculators && <div className="grid w-full min-w-0 items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {table('Income', 'income', income, incomeFields)}
         {table('Disallowable Expenses', 'disallowable', disallowableExpense, disallowableExpenseFields)}
         {table('Expenses', 'expense', expense, expenseFields)}

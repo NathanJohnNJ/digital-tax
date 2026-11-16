@@ -2,14 +2,14 @@ import Link from 'next/link';
 
 export default async function Page() {
   return (
-    <div className="flex flex-col items-center justify-center p-3 bg-neutral-75 w-[99.75%] h-[99%] border-2 border-neutral-500 rounded-2xl transition-all duration-75 text-slate-700">
-      <div className="flex flex-col items-center p-8 w-full h-full bg-white overflow-y-scroll rounded-xl shadow-2xl">
-        <h2 className="font-extrabold text-5xl">Digital Tax</h2>
-        <h2 className="font-extrabold text-5xl">Privacy Policy</h2>
+    <div className="flex min-w-0 flex-1 flex-col items-center p-2 sm:p-3 bg-neutral-75 border-2 border-neutral-500 rounded-2xl text-slate-700">
+      <div className="flex flex-col items-center p-4 sm:p-8 w-full bg-white rounded-xl shadow-2xl">
+        <h2 className="text-center font-extrabold text-3xl sm:text-5xl">Digital Tax</h2>
+        <h2 className="text-center font-extrabold text-3xl sm:text-5xl">Privacy Policy</h2>
 
         <div className="pt-6 max-w-5xl">
           <p className="ml-2">
-            This Privacy Policy explains how NJTD (developer: <strong>Nathan John</strong>) collects, uses, stores, and shares personal data when you use the Digital Tax web application (“Digital Tax”, “the App”) available at <Link className="cursor-pointer font-semibold text-neutral-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-neutral-600" href="https://dt.njtd.xyz">https://dt.njtd.xyz</Link>. It also explains your rights under UK data protection law.
+            This Privacy Policy explains how NJTD (developer: <strong>Nathan John</strong>) collects, uses, stores, and shares personal data when you use the Digital Tax web application (“Digital Tax”, “the App”) available at <Link className="cursor-pointer font-semibold text-neutral-800 hover:underline hover:decoration-double hover:decoration-blue-600/80 hover:font-bold hover:text-neutral-600" href="https://tax.njtd.xyz">https://tax.njtd.xyz</Link>. It also explains your rights under UK data protection law.
           </p>
 
           <h3 className="font-bold text-2xl mt-6 mb-1">Controller</h3>

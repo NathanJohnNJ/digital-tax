@@ -4,6 +4,7 @@ import { HMRC_CONFIG } from "@/config/hmrc";
 import { cookies } from 'next/headers';
 import { auth0 } from '@/lib/auth0';
 import { requestAppAccessToken } from './requestAppAccessToken';
+import { sandboxTestToolsEnabled } from '@/lib/hmrcSandboxTools';
 
 export type ServiceItem = {
   key: string;
@@ -31,7 +32,7 @@ export async function getServicesAction(): Promise<ServicesActionResult> {
   const session = await auth0.getSession();
   const userEmail = session?.user?.email?.toLowerCase();
 
-  if (process.env.NODE_ENV === 'production' || !userEmail || !allowedTestingEmails.includes(userEmail)) {
+  if (!sandboxTestToolsEnabled() || !userEmail || !allowedTestingEmails.includes(userEmail)) {
     return { ok: false, status: 403, error: 'Forbidden' };
   }
 
@@ -41,7 +42,7 @@ export async function getServicesAction(): Promise<ServicesActionResult> {
   if(!cookieStore.has('application_access_token')){ 
     const tokenResult = await requestAppAccessToken();
     if (!tokenResult.ok) {
-      console.error('Failed to fetch application token', tokenResult);
+      console.error('Failed to fetch HMRC Sandbox application token', { status: tokenResult.status });
       return { ok: false, status: tokenResult.status, error: typeof tokenResult.body === 'string' ? tokenResult.body : JSON.stringify(tokenResult.body ?? { error: 'Unable to fetch application token' }) };
     }
 
@@ -61,13 +62,22 @@ export async function getServicesAction(): Promise<ServicesActionResult> {
     return { ok: false, status: 401, error: 'Missing application access token' };
   }
 
-  const res = await fetch(`${HMRC_CONFIG.testApiUrl}/create-test-user/services`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
-    }
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${HMRC_CONFIG.testApiUrl}/create-test-user/services`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/vnd.hmrc.1.0+json",
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    });
+  } catch (error) {
+    console.error('HMRC Sandbox services request failed', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    });
+    return { ok: false, status: 502, error: 'Unable to reach HMRC Sandbox' };
+  }
 
   if (!res.ok) {
     return { ok: false, status: res.status, error: `Services request failed with status ${res.status}` };
@@ -79,10 +89,9 @@ export async function getServicesAction(): Promise<ServicesActionResult> {
     if (!Array.isArray(response)) {
       return { ok: false, status: 500, error: 'Unexpected services response format' };
     }
-    console.log(response);
     return { ok: true, services };
-  }catch(error){
-    console.error(error);
+  }catch{
+    console.error('Unable to parse HMRC Sandbox services response');
     return { ok: false, status: 500, error: 'Unable to parse services response' };
   }
 }

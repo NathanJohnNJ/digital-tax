@@ -10,17 +10,17 @@ export default async function Page({
   
 
   return (
-    <div className="p-3 bg-sky-75 w-[99%] h-full border-2 -z-50 border-blue-500 rounded-2xl transition-all duration-75">
-      <div className="w-full h-full rounded-2xl bg-white p-6 flex flex-col overflow-y-scroll scrollbar-none">
-        <div className="flex flex-col justify-start items-center w-full h-full">
-          <h1 className="text-4xl font-extrabold text-gray-900 mt-6">Business Overview</h1>
-          <h2 className="text-3xl font-extrabold text-gray-900">{businessName}</h2>
+    <div className="min-w-0 flex-1 p-2 sm:p-3 bg-sky-75 border-2 border-blue-500 rounded-2xl">
+      <div className="w-full rounded-2xl bg-white p-3 sm:p-6 flex flex-col">
+        <div className="flex flex-col justify-start items-center w-full text-center">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mt-6">Business Overview</h1>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 break-words max-w-full">{businessName}</h2>
         </div>
-        <div className="grid mt-4 grid-cols-6 grid-rows-2">
-          <div className="row-start-1 col-start-1 col-span-3">
+        <div className="grid min-w-0 mt-4 gap-4 lg:grid-cols-2">
+          <div className="min-w-0">
             <BusinessDetails nino={nino} businessId={businessId}/>
           </div>
-          <div className="row-start-1 col-start-4 col-span-3">
+          <div className="min-w-0">
             <Obligations nino={nino} businessId={businessId} />
           </div>
         </div>

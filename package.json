@@ -11,7 +11,7 @@
     "HMRC",
     "njtd"
   ],
-  "homepage": "https://dt.njtd.xyz",
+  "homepage": "https://tax.njtd.xyz",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/NathanJohnNJ/digital-tax.git"
@@ -47,6 +47,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "dotenv": "^18.0.4",
+    "supabase": "^3.0.0",
     "typescript": "6.0.3"
   },
   "bugs": {

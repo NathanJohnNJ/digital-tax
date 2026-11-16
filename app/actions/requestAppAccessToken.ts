@@ -1,4 +1,4 @@
-'use server'
+import 'server-only';
 
 import { HMRC_CONFIG } from "@/config/hmrc";
 
@@ -24,7 +24,7 @@ function isTokenPayload(value: unknown): value is TokenPayload {
   return typeof token.access_token === 'string' && typeof token.expires_in === 'number';
 }
 
-export async function requestAppAccessToken(scopes?: any): Promise<TokenRequestResult> {
+export async function requestAppAccessToken(scopes?: string): Promise<TokenRequestResult> {
   let searchParams;
   if(!scopes){
     searchParams = {
@@ -40,20 +40,29 @@ export async function requestAppAccessToken(scopes?: any): Promise<TokenRequestR
       scope: scopes
     };
   }
-  const tokenResponse = await fetch(`${HMRC_CONFIG.testApiUrl}/oauth/token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body: new URLSearchParams(searchParams)
-  });
+  let tokenResponse: Response;
+  try {
+    tokenResponse = await fetch(`${HMRC_CONFIG.testApiUrl}/oauth/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams(searchParams)
+    });
+  } catch (error) {
+    console.error('HMRC Sandbox application token request failed', {
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    });
+    return { ok: false, status: 502, body: { error: 'Unable to reach HMRC Sandbox' } };
+  }
 
   if (!tokenResponse.ok) {
-    let body: unknown;
+    const text = await tokenResponse.text();
+    let body: unknown = text;
     try {
-      body = await tokenResponse.json();
+      body = JSON.parse(text);
     } catch {
-      body = await tokenResponse.text();
+      // HMRC may return a non-JSON error.
     }
 
     return { ok: false, status: tokenResponse.status, body };

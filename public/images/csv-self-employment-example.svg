@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1420" height="230" viewBox="0 0 1420 230" role="img" aria-labelledby="title desc">
+  <title id="title">Example self-employment spreadsheet</title>
+  <desc id="desc">The header row maps date, type, category, description, source amount, source currency and sterling amount. Two rows show income and an expense in pounds.</desc>
+  <rect width="1420" height="230" fill="#f3f5f8"/>
+  <text x="20" y="27" font-family="Arial,sans-serif" font-size="17" font-weight="bold" fill="#243044">Illustration: self-employment spreadsheet</text>
+  <rect x="20" y="45" width="1380" height="154" fill="#fff" stroke="#aab3c0"/>
+  <rect x="20" y="45" width="1380" height="38" fill="#e9eef5"/>
+  <rect x="20" y="83" width="1380" height="38" fill="#dcebe1"/>
+  <path d="M70 45V199 M225 45V199 M370 45V199 M555 45V199 M820 45V199 M1010 45V199 M1200 45V199 M20 83H1400 M20 121H1400 M20 160H1400" stroke="#aab3c0"/>
+  <g font-family="Arial,sans-serif" font-size="16" fill="#273446">
+    <text x="91" y="70">A</text><text x="244" y="70">B</text><text x="390" y="70">C</text><text x="575" y="70">D</text><text x="840" y="70">E</text><text x="1030" y="70">F</text><text x="1220" y="70">G</text>
+    <text x="36" y="108">1</text><text x="80" y="108">recordDate</text><text x="235" y="108">recordType</text><text x="380" y="108">category</text><text x="565" y="108">description</text><text x="830" y="108">sourceAmount</text><text x="1020" y="108">sourceCurrency</text><text x="1210" y="108">amountGbp</text>
+    <text x="36" y="146">2</text><text x="80" y="146">2026-04-08</text><text x="235" y="146">income</text><text x="380" y="146">turnover</text><text x="565" y="146">Customer invoice</text><text x="830" y="146">125.50</text><text x="1020" y="146">GBP</text><text x="1210" y="146">125.50</text>
+    <text x="36" y="185">3</text><text x="80" y="185">2026-04-09</text><text x="235" y="185">expense</text><text x="380" y="185">adminCosts</text><text x="565" y="185">Office supplies</text><text x="830" y="185">25.00</text><text x="1020" y="185">GBP</text><text x="1210" y="185">25.00</text>
+  </g>
+</svg>

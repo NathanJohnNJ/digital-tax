@@ -8,7 +8,8 @@ const nextConfig: NextConfig = {
     ]
   },
   pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
-  allowedDevOrigins: ['192.168.0.123']
+  allowedDevOrigins: ['192.168.0.123'],
+  output: 'standalone'
 };
 
 const withMDX = createMDX({

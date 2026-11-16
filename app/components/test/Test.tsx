@@ -78,25 +78,25 @@ export default function Test() {
         >
           {isLoading ? 'Validating headers...' : 'Validate fraud-prevention headers'}
         </button>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
+        <div className="mt-4">
+          <table className="block w-full border-collapse text-left text-sm sm:table">
+            <thead className="hidden sm:table-header-group">
               <tr className="border-b border-slate-300">
                 <th scope="col" className="p-2">Header</th>
                 <th scope="col" className="p-2">Sent value</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="block sm:table-row-group">
               {fraudHeaders
                 ? Object.entries(fraudHeaders).map(([name, value]) => (
-                  <tr key={name} className="border-b border-slate-200 align-top">
-                    <th scope="row" className="whitespace-nowrap p-2 font-mono">{name}</th>
-                    <td className="break-all p-2 font-mono">{value || '(empty)'}</td>
+                  <tr key={name} className="block border-b border-slate-200 py-2 align-top sm:table-row sm:py-0">
+                    <th scope="row" className="block break-all px-2 font-mono sm:table-cell sm:whitespace-nowrap sm:p-2">{name}</th>
+                    <td className="block break-all px-2 font-mono sm:table-cell sm:p-2">{value || '(empty)'}</td>
                   </tr>
                 ))
                 : (
-                  <tr>
-                    <td colSpan={2} className="p-3 text-slate-600">
+                  <tr className="block sm:table-row">
+                    <td colSpan={2} className="block p-3 text-slate-600 sm:table-cell">
                       Run the validation request to display the headers sent to HMRC.
                     </td>
                   </tr>
@@ -107,7 +107,7 @@ export default function Test() {
         {headerError && <p role="alert" className="mt-3 text-red-700">{headerError}</p>}
       </section>
       {result && (
-        <pre role="status" className="max-w-3xl overflow-x-auto whitespace-pre-wrap rounded-lg bg-slate-100 p-4 text-sm">
+        <pre role="status" className="w-full max-w-3xl whitespace-pre-wrap break-all rounded-lg bg-slate-100 p-4 text-sm">
           {result}
         </pre>
       )}

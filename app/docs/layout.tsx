@@ -9,15 +9,15 @@ export default function DocsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-[99%] w-[99.75%] ml-[-0.25%] border-2 border-mauve-700 rounded-2xl">
+    <div className="flex min-w-0 w-full flex-1 flex-col rounded-2xl border-2 border-mauve-700 bg-linear-to-br from-mauve-100 via-white to-sky-50 md:flex-row">
       <MDXTheme>
         <Sidebar />
-        <main className="flex flex-col items-center flex-1 p-10 h-full w-full overflow-y-scroll scrollbar-none">
-          <div className="relative w-full overflow-visible">
+        <main className="flex min-w-0 flex-1 flex-col items-center p-3 sm:p-6 lg:p-10">
+          <div className="relative z-10 w-full">
             <Search />
           </div>
-          <div className="bg-mauve-50 shadow-xl rounded-2xl w-full h-full overflow-y-auto relative scrollbar-none">
-            <div className="absolute left-3 top-2">
+          <div className="relative w-full rounded-2xl bg-white text-slate-900 shadow-xl">
+            <div className="px-4 pt-4">
               <Breadcrumbs />
             </div>
             {children}

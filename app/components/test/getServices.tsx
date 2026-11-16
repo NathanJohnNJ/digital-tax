@@ -26,7 +26,7 @@ export default function GetServices() {
       </button>
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
       {services &&
-      <div className="transition-all duration-150 border-2 border-amber-700 rounded-2xl p-6 m-4 overflow-y-scroll max-h-100">
+      <div className="w-full max-w-xl break-words border-2 border-amber-700 rounded-2xl p-4 sm:p-6">
         <ul className="flex flex-col mb-4 list-disc">
           { services.map((service, i) => {
             return (

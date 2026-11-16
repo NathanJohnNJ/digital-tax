@@ -1,38 +1,25 @@
 import { HMRC_CONFIG } from "@/config/hmrc";
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from 'next/headers';
 import { buildFraudPreventionHeaders } from "../../utils/buildFraudPreventionHeaders";
-import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
+import { isFraudClientData } from "../../utils/hmrcFraudValidation";
+import { readJsonRecord } from "../../utils/hmrcValidation";
+import { getCurrentHmrcAccessToken } from "@/lib/hmrcTokens";
 
 export async function POST(req: NextRequest, route: string, searchParams: string) {
-  const { clientData } = await req.json();
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
-  const cookieStore = await cookies();
-
-  let token: string | undefined;
-  if(!cookieStore.has('access_token')){ 
-    const tokenResult = await requestUserAccessToken();
-    if (!tokenResult.ok) {
-      return Response.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
-    }
-
-    const options = {
-      httpOnly: true,
-      maxAge: tokenResult.tokens.expires_in,
-      secure: process.env.NODE_ENV === "production"
-    };
-    cookieStore.set('access_token', tokenResult.tokens.access_token, options);
-    if (tokenResult.tokens.refresh_token) {
-      cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
-    }
-    token = tokenResult.tokens.access_token;
-  } else {
-    token = cookieStore.get('access_token')?.value;
+  const parsed = await readJsonRecord(req);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
-
-  if (!token) {
-    return Response.json({ error: "Missing access token" }, { status: 401 });
+  const { clientData } = parsed.value;
+  if (!isFraudClientData(clientData)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data is invalid' }, { status: 400 });
   }
+  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, req);
+  const tokenResult = await getCurrentHmrcAccessToken();
+  if (!tokenResult.ok) {
+    return NextResponse.json({ error: tokenResult.error }, { status: tokenResult.status });
+  }
+  const token = tokenResult.accessToken;
 
   const requestUrl = new URL(`${HMRC_CONFIG.testApiUrl}${route}`);
   requestUrl.search = searchParams;

@@ -5,20 +5,20 @@ export default function BusinessButton(props: any) {
   const { business, nino } = props;
 
   return (
-    <div className="flex items-center border-2 border-gray-500 bg-gray-100 rounded-4xl">
-      <div className="flex justify-center items-center gap-2 px-6 py-3 text-[14px] text-gray-700 w-min">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center w-65">
-            <label className=" font-bold text-left w-15">Name:</label>
-            <input disabled className=" text-right w-50 rounded-lg border border-gray-300 bg-white px-2" value={business.tradingName}></input>
+    <div className="flex w-full max-w-sm items-center rounded-4xl border-2 border-gray-500 bg-gray-100">
+      <div className="w-full min-w-0 px-3 py-3 text-[14px] text-gray-700 sm:px-6">
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0 items-center">
+            <label className="w-15 shrink-0 font-bold text-left">Name:</label>
+            <input disabled className="min-w-0 flex-1 text-right rounded-lg border border-gray-300 bg-white px-2" value={business.tradingName}></input>
           </div>
-          <div className="flex items-center w-65">
-            <label className="block font-bold text-left w-15">ID:</label>
-            <input disabled className="inline text-right w-50 rounded-lg border border-gray-300 bg-white px-2" value={business.businessId}></input>
+          <div className="flex min-w-0 items-center">
+            <label className="w-15 shrink-0 font-bold text-left">ID:</label>
+            <input disabled className="min-w-0 flex-1 text-right rounded-lg border border-gray-300 bg-white px-2" value={business.businessId}></input>
           </div>
-          <div className="flex items-center w-65">
-            <label className="inline font-bold text-left w-15">Type:</label>
-            <input disabled className="inline text-right w-50 rounded-lg border border-gray-300 bg-white px-2" value={business.tradingType}></input>
+          <div className="flex min-w-0 items-center">
+            <label className="w-15 shrink-0 font-bold text-left">Type:</label>
+            <input disabled className="min-w-0 flex-1 text-right rounded-lg border border-gray-300 bg-white px-2" value={business.tradingType}></input>
           </div>
         
         <Link href={{

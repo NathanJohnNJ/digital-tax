@@ -21,4 +21,11 @@ describe('account navigation', () => {
     expect(linkUrl.searchParams.get('nino')).toBe('AB123456C');
     expect(linkUrl.searchParams.get('businessId')).toBe('XBIS123');
   });
+
+  it('links to the record import screen', () => {
+    render(<NavLinks />);
+
+    const importUrl = new URL(screen.getByRole('link', { name: 'Import records' }).getAttribute('href')!, 'http://localhost');
+    expect(importUrl.pathname).toBe('/account/records/import');
+  });
 });

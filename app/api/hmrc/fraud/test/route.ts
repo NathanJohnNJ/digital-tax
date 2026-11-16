@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
 import { auth0 } from '@/lib/auth0';
 import { buildFraudPreventionHeaders } from "../../../utils/buildFraudPreventionHeaders";
+import { isFraudClientData } from "../../../utils/hmrcFraudValidation";
 import { requestAppAccessToken } from '@/app/actions/requestAppAccessToken';
 import { forwardHmrcResponse } from '@/app/api/utils/forwardHmrcResponse';
 import { readJsonRecord } from '@/app/api/utils/hmrcValidation';
@@ -35,6 +36,9 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
+  if (!isFraudClientData(parsed.value)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data is invalid' }, { status: 400 });
+  }
 
   const cookieStore = await cookies();
   let token: string | undefined;
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
   }
   
   try {
-    const fraudPreventionHeaders = await buildFraudPreventionHeaders(parsed.value);
+    const fraudPreventionHeaders = await buildFraudPreventionHeaders(parsed.value, req);
     const response = await fetch(`${HMRC_CONFIG.testApiUrl}/test/fraud-prevention-headers/validate`, {
       method: "GET",
       headers: {

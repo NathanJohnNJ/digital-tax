@@ -54,11 +54,11 @@ export default async function RootLayout({
         <title>Digital Tax by NJTD</title>
       </Head>
       <body>
-        <main className="h-screen w-screen bg-linear-300 from-zinc-400/70 to-white overflow-hidden relative">
+        <main className="min-h-screen w-full bg-linear-300 from-zinc-400/70 to-white">
           <Auth0Provider>
-            <div className="flex h-screen w-screen">
+            <div className="flex min-h-screen w-full flex-row">
               <SideNav />
-              <div className="flex flex-col items-center justify-center w-full h-full">
+              <div className="flex min-w-0 flex-1 flex-col items-center">
                 {children}
               </div>
             </div>

@@ -145,13 +145,13 @@ export default function IpDiagnostics() {
       </button>
 
       {result && browserIp && (
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-6">
           <h4 className="mb-2 text-lg font-semibold">IP address diagnostics</h4>
           <p className="mb-3 text-sm">
             Compares the IP values used by the app with public IP lookup results.
           </p>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
+          <table className="block w-full border-collapse text-left text-sm sm:table">
+            <thead className="hidden sm:table-header-group">
               <tr className="border-b border-slate-300">
                 <th className="p-2">Source</th>
                 <th className="p-2">Client public IP</th>
@@ -159,27 +159,29 @@ export default function IpDiagnostics() {
                 <th className="p-2">Server forwarding chain</th>
               </tr>
             </thead>
-            <tbody>
-              <tr className="border-b border-slate-200 align-top">
-                <th className="p-2">Values used by the app</th>
-                <td className="p-2"><Value value={result.application.clientPublicIp} /></td>
-                <td className="p-2">
+            <tbody className="block sm:table-row-group">
+              <tr className="block border-b border-slate-200 align-top sm:table-row">
+                <th scope="row" className="block p-2 sm:table-cell">Values used by the app</th>
+                <td className="block p-2 sm:table-cell"><span className="font-semibold sm:hidden">Client public IP: </span><Value value={result.application.clientPublicIp} /></td>
+                <td className="block p-2 sm:table-cell">
                   <div>HMRC vendor header: <Value value={result.application.vendorPublicIp} /></div>
                   <div>Configured server IP: <Value value={result.application.configuredServerIps.server} /></div>
                   <div>Configured WAF IP: <Value value={result.application.configuredServerIps.waf} /></div>
                   <div>Configured second server IP: <Value value={result.application.configuredServerIps.server2} /></div>
                 </td>
-                <td className="p-2"><Value value={result.application.vendorForwarded} /></td>
+                <td className="block p-2 sm:table-cell"><span className="font-semibold sm:hidden">Server forwarding chain: </span><Value value={result.application.vendorForwarded} /></td>
               </tr>
-              <tr className="align-top">
-                <th className="p-2">IP lookup API</th>
-                <td className="p-2">
+              <tr className="block align-top sm:table-row">
+                <th scope="row" className="block p-2 sm:table-cell">IP lookup API</th>
+                <td className="block p-2 sm:table-cell">
+                  <span className="font-semibold sm:hidden">Client public IP: </span>
                   {browserIp.error ?? <Value value={browserIp.ip} />}
                 </td>
-                <td className="p-2">
+                <td className="block p-2 sm:table-cell">
+                  <span className="font-semibold sm:hidden">Server public IP: </span>
                   {result.ipApi.serverError ?? <Value value={result.ipApi.serverPublicIp} />}
                 </td>
-                <td className="p-2 text-slate-600">
+                <td className="block p-2 text-slate-600 sm:table-cell">
                   Not applicable; an IP lookup reports the address seen by that API, not the configured proxy chain.
                 </td>
               </tr>

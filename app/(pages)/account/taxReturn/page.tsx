@@ -10,9 +10,9 @@ export default async function Page({
   const firstValue = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
 
   return (
-    <div className="p-3 bg-sky-75 w-[99%] h-full pb-10 border-2 -z-50 border-blue-500 rounded-2xl transition-all duration-75">
-      <div className="w-full h-full rounded-2xl bg-white p-6 flex flex-col overflow-y-scroll scrollbar-none">
-        <h1 className="text-4xl font-extrabold text-gray-900 mt-6 text-center">End of year tax return</h1>
+    <div className="min-w-0 flex-1 p-2 sm:p-3 bg-sky-75 border-2 border-blue-500 rounded-2xl">
+      <div className="w-full rounded-2xl bg-white p-3 sm:p-6 flex flex-col">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mt-6 text-center">End of year tax return</h1>
         <AnnualSummary
           nino={firstValue(nino)}
           businessId={firstValue(businessId)}

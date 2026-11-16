@@ -2,7 +2,8 @@ import { isIP } from 'node:net';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth0 } from '@/lib/auth0';
 import { buildFraudPreventionHeaders } from '@/app/api/utils/buildFraudPreventionHeaders';
-import { isRecord, readJsonRecord } from '@/app/api/utils/hmrcValidation';
+import { isFraudClientData } from '@/app/api/utils/hmrcFraudValidation';
+import { readJsonRecord } from '@/app/api/utils/hmrcValidation';
 
 const testingAllowedEmailsValue = process.env.TESTING_ALLOWED_USER_EMAILS;
 const allowedTestingEmails = testingAllowedEmailsValue
@@ -50,12 +51,12 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
-  if (!isRecord(parsed.value.clientData)) {
-    return NextResponse.json({ error: 'Client fraud-prevention data must be a JSON object' }, { status: 400 });
+  if (!isFraudClientData(parsed.value.clientData)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data is invalid' }, { status: 400 });
   }
 
   try {
-    const headers = await buildFraudPreventionHeaders(parsed.value.clientData);
+    const headers = await buildFraudPreventionHeaders(parsed.value.clientData, request);
 
     let serverIpApi: string | null = null;
     let serverIpApiError: string | null = null;

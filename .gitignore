@@ -43,3 +43,5 @@ next-env.d.ts
 notes/
 package-lock.json
 .continue
+buildStandalone.sh
+standalone.zip

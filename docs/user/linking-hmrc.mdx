@@ -2,75 +2,42 @@
 
 <br></br>
 
-<center>Linking your HMRC account allows the app to submit your tax information securely on your behalf.
-This process uses HMRC’s official OAuth system and is fully authorised.</center>
+<center>Linking your HMRC account gives Digital Tax permission to access supported tax information on your behalf through HMRC OAuth.</center>
+
 <br></br>
 
 ---
 
-### Step 1 — Start the Link Process
+### Step 1 — Sign in to Digital Tax
 
-Inside the app, go to:
+Go to **Account → Login** and sign in or register. Auth0 handles your Digital Tax sign-in; your password is not shared with Digital Tax.
 
-**Account → Login**
+### Step 2 — Start the HMRC link
 
-Login to Digital Tax or register for a new account.
+From your account page, select **Link HMRC Account**. You will be redirected to HMRC's secure authorization page.
 
-The login/registration is handled by Auth0 so your password is never shared with Digital Tax.
+### Step 3 — Sign in with HMRC
 
-Once logged in, you will be redirected back to your account within Digital Tax.
+Sign in using your Government Gateway credentials. HMRC handles that sign-in and will ask you to approve the requested access.
 
-### Step 2 — Start the Link Process
+### Step 4 — Approve access
 
-Inside your account, click the '**Link HMRC Account**' button.
+The current integration requests permission to read and submit supported Self Assessment information for Making Tax Digital for Income Tax. It does not request MTD VAT access.
 
-You will be redirected to HMRC’s secure login page.
+### Step 5 — Return to Digital Tax
 
-### Step 3 — Sign In With HMRC
+After approval, HMRC redirects you to your account page. Your HMRC connection is stored with your Digital Tax account, so you do not need to link it again at every login and can use it from another device when signed in to the same account.
 
-You will sign in using your Government Gateway credentials.
-
-HMRC will ask you to confirm that you want to grant permission to this app.  
-You are not sharing your password — HMRC handles the login.
-
-### Step 4 — Grant Permissions
-
-HMRC will ask you to approve access for:
-
-- Making Tax Digital (MTD) VAT  
-- MTD Income Tax (ITSA)  
-- Reading and submitting tax information  
-
-You can revoke this at any time.
-
-### Step 5 — Return to the App
-
-Once approved, HMRC redirects you back to your account page.
-
-You should now see:
+HMRC may require you to authorize again if the refresh authorization is no longer valid. If that happens, select **Link HMRC Account** and repeat the steps.
 
 <br></br>
-![Successfully connected with HMRC account](http://localhost:3000/images/connected.png)
-<br></br>
+
 ---
 
 ### Troubleshooting
 
-- **Incorrect Government Gateway password**  
-  HMRC will show an error — simply retry.
+- **HMRC sign-in or permission error:** follow HMRC's instructions, then restart the linking process.
+- **Authorization expired or revoked:** sign in to Digital Tax and link HMRC again.
+- **HMRC link does not complete:** make sure you return to the same browser session where you started the process.
 
-- **Expired session**  
-  Restart the linking process.
-
-- **Permissions not granted**  
-  You may need to re‑link your account.
-
----
-
-### What You Can Do Next
-
-More features are coming soon:
-
-- View submission history  
-
-These will appear automatically once implemented.
+The integration currently uses HMRC Sandbox endpoints. A successful Sandbox connection is not a live HMRC filing.

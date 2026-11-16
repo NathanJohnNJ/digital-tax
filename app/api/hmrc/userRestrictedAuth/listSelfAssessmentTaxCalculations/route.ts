@@ -1,8 +1,11 @@
-import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
 import { HMRC_CONFIG } from '@/config/hmrc';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  getCurrentHmrcAccessToken,
+  markCurrentHmrcAuthorizationRequired,
+} from '@/lib/hmrcTokens';
 import { buildFraudPreventionHeaders } from '../../../utils/buildFraudPreventionHeaders';
+import { isFraudClientData } from '../../../utils/hmrcFraudValidation';
 import {
   forwardValidatedHmrcResponse,
   isCalculationListForTaxYear,
@@ -25,39 +28,17 @@ export async function POST(request: NextRequest) {
   if (!isValidTaxYear(taxYear)) {
     return NextResponse.json({ error: 'A valid tax year is required' }, { status: 400 });
   }
-  if (!isRecord(clientData)) {
-    return NextResponse.json({ error: 'Client fraud-prevention data must be a JSON object' }, { status: 400 });
+  if (!isFraudClientData(clientData)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data is invalid' }, { status: 400 });
   }
 
   try {
-    const fraudHeaders = await buildFraudPreventionHeaders(clientData);
-    const cookieStore = await cookies();
-    const hasAccessToken = cookieStore.has('access_token');
-    let token = hasAccessToken ? cookieStore.get('access_token')?.value : undefined;
-
-    if (!token && !hasAccessToken) {
-      const tokenResult = await requestUserAccessToken();
-      if (!tokenResult.ok) {
-        return NextResponse.json({ error: 'HMRC authorisation is required' }, { status: tokenResult.status });
-      }
-
-      token = tokenResult.tokens.access_token;
-      const options = {
-        httpOnly: true,
-        maxAge: tokenResult.tokens.expires_in,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax' as const,
-        path: '/',
-      };
-      cookieStore.set('access_token', token, options);
-      if (tokenResult.tokens.refresh_token) {
-        cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
-      }
+    const fraudHeaders = await buildFraudPreventionHeaders(clientData, request);
+    const tokenResult = await getCurrentHmrcAccessToken();
+    if (!tokenResult.ok) {
+      return NextResponse.json({ error: tokenResult.error }, { status: tokenResult.status });
     }
-
-    if (!token) {
-      return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
-    }
+    const token = tokenResult.accessToken;
 
     const endpoint = [
       HMRC_CONFIG.testApiUrl,
@@ -80,6 +61,8 @@ export async function POST(request: NextRequest) {
       'tax calculation list request',
       (responseBody) => isCalculationListForTaxYear(responseBody, taxYear),
       [nino],
+      200,
+      markCurrentHmrcAuthorizationRequired,
     );
   } catch (error) {
     console.error('HMRC tax calculation list request could not be completed', {

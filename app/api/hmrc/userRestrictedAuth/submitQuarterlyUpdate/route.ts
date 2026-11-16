@@ -1,8 +1,11 @@
 import { HMRC_CONFIG } from '@/config/hmrc';
-import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  getCurrentHmrcAccessToken,
+  markCurrentHmrcAuthorizationRequired,
+} from '@/lib/hmrcTokens';
 import { buildFraudPreventionHeaders } from '../../../utils/buildFraudPreventionHeaders';
+import { isFraudClientData } from '../../../utils/hmrcFraudValidation';
 
 const incomeFields = ['turnover', 'other', 'taxTakenOffTradingIncome'] as const;
 const expenseFields = [
@@ -88,6 +91,9 @@ export async function POST(request: NextRequest) {
   if (typeof taxYear !== 'string' || taxYear !== taxYearForDate(periodEndDate)) {
     return NextResponse.json({ error: 'The tax year does not match the reporting period' }, { status: 400 });
   }
+  if (!isFraudClientData(clientData)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data is invalid' }, { status: 400 });
+  }
 
   const supportsTaxTakenOffTradingIncome = Number(taxYear.slice(0, 4)) >= 2023;
   const taxYearIncomeFields = supportsTaxTakenOffTradingIncome
@@ -120,33 +126,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Cumulative updates must start at the beginning of the tax year' }, { status: 400 });
   }
 
-  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData);
-  const cookieStore = await cookies();
-  let token = cookieStore.get('access_token')?.value;
-
-  if (!token && !cookieStore.has('access_token')) {
-    const tokenResult = await requestUserAccessToken();
-    if (!tokenResult.ok) {
-      return NextResponse.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
-    }
-
-    const options = {
-      httpOnly: true,
-      maxAge: tokenResult.tokens.expires_in,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      path: '/',
-    };
-    cookieStore.set('access_token', tokenResult.tokens.access_token, options);
-    if (tokenResult.tokens.refresh_token) {
-      cookieStore.set('refresh_token', tokenResult.tokens.refresh_token, options);
-    }
-    token = tokenResult.tokens.access_token;
+  const fraudPreventionHeaders = await buildFraudPreventionHeaders(clientData, request);
+  const tokenResult = await getCurrentHmrcAccessToken();
+  if (!tokenResult.ok) {
+    return NextResponse.json({ error: tokenResult.error }, { status: tokenResult.status });
   }
-
-  if (!token) {
-    return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
-  }
+  const token = tokenResult.accessToken;
 
   const isCumulative = Number(taxYear.slice(0, 4)) >= 2025;
   const endpoint = isCumulative
@@ -182,6 +167,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!hmrcResponse.ok) {
+      if (hmrcResponse.status === 401) {
+        await markCurrentHmrcAuthorizationRequired();
+      }
       return NextResponse.json(
         { error: hmrcErrorMessage(responseBody), details: responseBody },
         { status: hmrcResponse.status },

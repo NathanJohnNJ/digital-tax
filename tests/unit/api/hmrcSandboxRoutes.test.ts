@@ -39,23 +39,28 @@ function hmrcResponse(body: unknown, status: number) {
 
 describe('HMRC Sandbox support routes', () => {
   let createTestUserPost: typeof import('@/app/api/hmrc/applicationRestrictedAuth/createTestUser/route').POST;
+  let getServicesAction: typeof import('@/app/actions/getServicesAction').getServicesAction;
   let fraudValidationPost: typeof import('@/app/api/hmrc/fraud/test/route').POST;
   let ipDiagnosticsPost: typeof import('@/app/api/hmrc/fraud/ip-diagnostics/route').POST;
 
   beforeAll(async () => {
     vi.stubEnv('TESTING_ALLOWED_USER_EMAILS', 'sandbox-tester@example.com');
     vi.resetModules();
-    const [createUserRoute, fraudRoute, ipDiagnosticsRoute] = await Promise.all([
+    const [createUserRoute, fraudRoute, ipDiagnosticsRoute, servicesModule] = await Promise.all([
       import('@/app/api/hmrc/applicationRestrictedAuth/createTestUser/route'),
       import('@/app/api/hmrc/fraud/test/route'),
       import('@/app/api/hmrc/fraud/ip-diagnostics/route'),
+      import('@/app/actions/getServicesAction'),
     ]);
     createTestUserPost = createUserRoute.POST;
     fraudValidationPost = fraudRoute.POST;
     ipDiagnosticsPost = ipDiagnosticsRoute.POST;
+    getServicesAction = servicesModule.getServicesAction;
   });
 
   beforeEach(() => {
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv('HMRC_ENABLE_SANDBOX_TEST_TOOLS', '');
     cookieStore.has.mockReturnValue(true);
     cookieStore.get.mockReturnValue({ value: 'test-access-token' });
     vi.mocked(cookies).mockResolvedValue(cookieStore as unknown as Awaited<ReturnType<typeof cookies>>);
@@ -68,6 +73,7 @@ describe('HMRC Sandbox support routes', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   afterAll(() => {
@@ -84,9 +90,90 @@ describe('HMRC Sandbox support routes', () => {
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual(payload);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(fetch).toHaveBeenCalledWith(
+      'https://test-api.service.hmrc.gov.uk/create-test-user/individuals',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Accept: 'application/vnd.hmrc.1.0+json',
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer test-access-token',
+        }),
+        body: JSON.stringify({ serviceNames: ['self-assessment'] }),
+      }),
+    );
   });
 
-  it('preserves test-user creation errors and logs HMRC response details', async () => {
+  it('denies both test-user tools by default in production builds', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const response = await createTestUserPost(postRequest('http://localhost/api/test-user', {
+      serviceNamesList: ['mtd-income-tax'],
+    }));
+
+    expect(response.status).toBe(403);
+    expect(await getServicesAction()).toMatchObject({ ok: false, status: 403 });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('allows an allowlisted tester to use both Sandbox tools when enabled in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('HMRC_ENABLE_SANDBOX_TEST_TOOLS', 'true');
+    const services = [{ key: 'mtd-income-tax', name: 'MTD Income Tax', allowedUserTypes: ['individual'] }];
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(hmrcResponse({ userId: 'example' }, 201))
+      .mockResolvedValueOnce(hmrcResponse(services, 200));
+
+    const response = await createTestUserPost(postRequest('http://localhost/api/test-user', {
+      serviceNamesList: ['mtd-income-tax'],
+    }));
+    expect(response.status).toBe(201);
+    expect(await getServicesAction()).toEqual({ ok: true, services });
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      'https://test-api.service.hmrc.gov.uk/create-test-user/services',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({ Accept: 'application/vnd.hmrc.1.0+json' }),
+      }),
+    );
+  });
+
+  it('denies non-allowlisted users even when production Sandbox tools are enabled', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('HMRC_ENABLE_SANDBOX_TEST_TOOLS', 'true');
+    getSessionMock.mockResolvedValue({ user: { email: 'other@example.com' } });
+
+    const response = await createTestUserPost(postRequest('http://localhost/api/test-user', {
+      serviceNamesList: ['mtd-income-tax'],
+    }));
+    expect(response.status).toBe(403);
+    expect(await getServicesAction()).toMatchObject({ ok: false, status: 403 });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { serviceNamesList: [] },
+    { serviceNamesList: ['unknown-service'] },
+    { serviceNamesList: ['mtd-income-tax', 'mtd-income-tax'] },
+    { serviceNamesList: [123] },
+  ])('rejects invalid service selections before calling HMRC: %j', async (body) => {
+    const response = await createTestUserPost(postRequest('http://localhost/api/test-user', body));
+    expect(response.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed JSON before calling HMRC', async () => {
+    const response = await createTestUserPost(new NextRequest('http://localhost/api/test-user', {
+      method: 'POST',
+      body: '{',
+      headers: { 'Content-Type': 'application/json' },
+    }));
+    expect(response.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('preserves test-user creation errors without logging the response body', async () => {
     const errorBody = { code: 'INVALID_REQUEST', message: 'Requested service is unavailable' };
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(fetch).mockResolvedValueOnce(hmrcResponse(errorBody, 400));
@@ -99,7 +186,20 @@ describe('HMRC Sandbox support routes', () => {
     expect(await response.json()).toEqual(errorBody);
     expect(consoleError).toHaveBeenCalledWith('HMRC test-user creation failed', {
       status: 400,
-      body: JSON.stringify(errorBody),
+    });
+  });
+
+  it('reports a Sandbox network failure without leaking its details', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('private connection details'));
+    const response = await createTestUserPost(postRequest('http://localhost/api/test-user', {
+      serviceNamesList: ['mtd-income-tax'],
+    }));
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({ error: 'Unable to reach HMRC Sandbox. Please try again later.' });
+    expect(consoleError).toHaveBeenCalledWith('HMRC Sandbox test-user creation request failed', {
+      errorName: 'Error',
     });
   });
 

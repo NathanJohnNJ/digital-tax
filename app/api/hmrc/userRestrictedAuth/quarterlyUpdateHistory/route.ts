@@ -1,9 +1,12 @@
-import { requestUserAccessToken } from '@/app/actions/requestUserAccessToken';
 import { HMRC_CONFIG } from '@/config/hmrc';
 import { getFromDate, getToDate } from '@/app/api/utils/ukTaxYear';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  getCurrentHmrcAccessToken,
+  markCurrentHmrcAuthorizationRequired,
+} from '@/lib/hmrcTokens';
 import { buildFraudPreventionHeaders } from '../../../utils/buildFraudPreventionHeaders';
+import { isFraudClientData } from '../../../utils/hmrcFraudValidation';
 
 type HmrcPeriod = {
   periodId?: string;
@@ -62,7 +65,10 @@ class HmrcResponseError extends Error {
   }
 }
 
-function hmrcErrorResponse(error: HmrcResponseError) {
+async function hmrcErrorResponse(error: HmrcResponseError) {
+  if (error.status === 401) {
+    await markCurrentHmrcAuthorizationRequired();
+  }
   console.error('HMRC quarterly update history request failed', {
     status: error.status,
     code: codeFrom(error.body),
@@ -123,19 +129,18 @@ export async function POST(request: NextRequest) {
   if (!taxYearMatch || Number(taxYearMatch[2]) !== (Number(taxYearMatch[1]) + 1) % 100) {
     return NextResponse.json({ error: 'A valid tax year is required' }, { status: 400 });
   }
-
-  let token = (await cookies()).get('access_token')?.value;
-  if (!token) {
-    const tokenResult = await requestUserAccessToken();
-    if (!tokenResult.ok) {
-      return NextResponse.json({ status: tokenResult.status, body: tokenResult.body }, { status: tokenResult.status });
-    }
-    token = tokenResult.tokens.access_token;
+  if (!isFraudClientData(clientData)) {
+    return NextResponse.json({ error: 'Client fraud-prevention data is invalid' }, { status: 400 });
   }
-  if (!token) return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
+
+  const tokenResult = await getCurrentHmrcAccessToken();
+  if (!tokenResult.ok) {
+    return NextResponse.json({ error: tokenResult.error }, { status: tokenResult.status });
+  }
+  const token = tokenResult.accessToken;
 
   try {
-    const fraudHeaders = await buildFraudPreventionHeaders(clientData);
+    const fraudHeaders = await buildFraudPreventionHeaders(clientData, request);
     const apiHeaders = {
       Authorization: `Bearer ${token}`,
       ...fraudHeaders,

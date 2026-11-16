@@ -8,17 +8,17 @@ export default function IncomeExpense(){
   const disallowableExpenseAmount = Number(disallowableExpenseTotal) || 0;
 
   return (
-    <div className="border border-gray-500 m-4 rounded-lg shadow-lg">
+    <div className="min-w-0 border border-gray-500 my-4 rounded-lg shadow-lg">
       <div className="rounded-t-lg flex w-full">
         <div className="p-3 border border-gray-500 border-r-0 text-left rounded-tl-lg w-1/2 font-extrabold">Total Income</div>
         <div className="p-3 border border-gray-500 rounded-tr-lg w-1/2"><label className="sr-only" htmlFor="income-total">Total Income</label><input id="income-total" type="number" min="0" step="0.01" value={incomeTotal} onChange={(event) => setIncomeTotal(event.target.value)} className="number-no-spinner w-full text-right" /></div>
       </div>
       <div className="flex w-full">
-        <div className="p-3 border border-gray-500 border-r-0 border-t-0 text-left w-1/2 font-extrabold text-nowrap">Total Expendature</div>
+        <div className="p-3 border border-gray-500 border-r-0 border-t-0 text-left w-1/2 font-extrabold">Total Expendature</div>
         <div className="p-3 border border-gray-500 border-t-0 w-1/2"><label className="sr-only" htmlFor="expense-total">Total Expenditure</label><input id="expense-total" type="number" min="0" step="0.01" value={expenseTotal} onChange={(event) => setExpenseTotal(event.target.value)} className="number-no-spinner w-full text-right" /></div>
       </div>
       <div className="flex w-full">
-        <div className="p-3 border border-gray-500 border-r-0 border-t-0 text-left w-1/2 font-extrabold text-nowrap">Total Disallowable Expendature</div>
+        <div className="p-3 border border-gray-500 border-r-0 border-t-0 text-left w-1/2 font-extrabold">Total Disallowable Expendature</div>
         <div className="p-3 border border-gray-500 border-t-0 w-1/2"><label className="sr-only" htmlFor="disallowable-expense-total">Total Disallowable Expenditure</label><input id="disallowable-expense-total" type="number" min="0" step="0.01" value={disallowableExpenseTotal} onChange={(event) => setDisallowableExpenseTotal(event.target.value)} className="number-no-spinner w-full text-right" /></div>
       </div>
       <div className="flex rounded-b-lg w-full">

@@ -1,0 +1,3 @@
+recordDate,recordType,category,description,sourceAmount,sourceCurrency,amountGbp
+2026-04-08,income,turnover,Customer invoice,125.50,GBP,125.50
+2026-04-09,expense,adminCosts,Office supplies,25.00,GBP,25.00

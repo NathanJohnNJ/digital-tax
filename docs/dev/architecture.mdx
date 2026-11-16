@@ -12,9 +12,9 @@
 
 - `app/(pages)/account` contains the account interface, including business details, obligations, the income calculator, quarterly update form, and year-end summary.
 - `app/api/hmrc/userRestrictedAuth` contains server routes for authorisation, business data, obligations, update history, and submissions.
-- `app/actions` contains server actions used to exchange an authorisation code for an HMRC token.
+- `app/actions` contains the server-side helper that exchanges a new authorization code for HMRC tokens.
 - `client/fraud` collects browser-side client information; `app/api/utils` builds HMRC fraud-prevention headers for outbound requests.
-- `config/hmrc.ts` defines HMRC sandbox endpoints. `lib` contains shared authentication and database code.
+- `config/hmrc.ts` defines HMRC sandbox endpoints. `lib` contains Auth0 user provisioning, encrypted per-user HMRC token storage, token refresh, and database connection code.
 - `docs/user` and `docs/dev` contain the MDX source for the documentation pages.
 
 <br></br>
@@ -23,9 +23,9 @@
 
 ### Request and data flow
 
-1. A user signs in to the application and separately authorises access through HMRC OAuth.
+1. A user signs in to the application. The account page idempotently creates or finds their `public.users` row by Auth0 `sub`; HMRC authorization is separate.
 2. The browser calls a same-origin Next.js route with the requested business operation and the client data needed for fraud-prevention headers.
-3. The server route validates applicable input, reads the HMRC access token from an HTTP-only cookie, builds request headers, and calls the HMRC test API.
+3. The server route validates applicable input, loads the user's encrypted HMRC token record, refreshes near-expiry access tokens under a per-user database row lock, builds request headers, and calls the HMRC test API.
 4. The route returns the HMRC result or an error to the browser for display.
 
 The quarterly and annual forms submit to HMRC's sandbox; the income calculator is local page state and is not connected to those forms. A PostgreSQL connection pool is configured in `lib/db.ts`, but these form flows send their data to HMRC's test API rather than saving calculator or form values in that database.
@@ -38,4 +38,10 @@ The quarterly and annual forms submit to HMRC's sandbox; the income calculator i
 
 The current HMRC configuration points to test authorization and API hosts. Sandbox success is not a live submission. Client credentials, redirect URI, database connection string, and vendor-header settings are provided through environment variables; do not commit their values.
 
-Before any production use, review token lifecycle and cookie settings, OAuth state/CSRF protection, client-data collection and identifiers, proxy/IP configuration, error handling, and the complete live HMRC API workflow. The current code and sandbox configuration are not a production-readiness claim.
+Before any production use, review token lifecycle and deployment secret rotation, OAuth state/CSRF protection, client-data collection and identifiers, proxy/IP configuration, error handling, and the complete live HMRC API workflow. Verify the token table and configure `HMRC_TOKEN_ENCRYPTION_KEY` before using the updated auth flow; see [HMRC OAuth](./hmrc-oauth) for the connected database's status. The current code and sandbox configuration are not a production-readiness claim.
+
+### Database migrations
+
+The Supabase CLI baseline in `supabase/migrations` captures the existing database schema and is recorded as applied on the linked project. It was checked by rebuilding a shadow database, comparing its schema with the remote, and running `supabase db push --remote --dry-run`. The SQL in `supabase/archive` is historical reference, not a migration to apply.
+
+For future schema changes, create an ordered migration with `supabase migration new <name>`, review and test it against a local or separate test database, then check `supabase migration list --remote` and `supabase db push --remote --dry-run` before applying it with `supabase db push --remote`. Confirm the target and review all pending migrations before deploying; don't make remote schema changes directly in the Dashboard. Establish encrypted backups and test recovery before relying on this workflow for customer data. A local `supabase db reset` destroys local database data; do not reset the shared remote database.
